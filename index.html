@@ -7,7 +7,7 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background-color: #181818;
             color: #ffffff;
             margin: 0;
@@ -15,78 +15,52 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
         }
-        h1 {
-            font-size: 24px;
-            margin-bottom: 5px;
-            color: #f39c12;
-        }
-        .subtitle {
-            color: #aaaaaa;
-            margin-bottom: 25px;
-            font-size: 14px;
-        }
+        h1 { font-size: 24px; margin-bottom: 5px; color: #f39c12; }
+        .subtitle { color: #aaaaaa; margin-bottom: 25px; font-size: 14px; }
         .game-card {
-            background-color: #242424;
-            border-radius: 12px;
-            width: 100%;
-            max-width: 350px;
-            padding: 15px;
-            margin-bottom: 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-            border: 1px solid #333;
+            background-color: #242424; border-radius: 12px; width: 100%; max-width: 350px;
+            padding: 15px; margin-bottom: 15px; display: flex; justify-content: space-between;
+            align-items: center; box-shadow: 0 4px 6px rgba(0,0,0,0.3); border: 1px solid #333;
         }
-        .game-info h2 {
-            margin: 0 0 5px 0;
-            font-size: 18px;
-        }
-        .game-info p {
-            margin: 0;
-            font-size: 12px;
-            color: #2ecc71;
-        }
+        .game-info h2 { margin: 0 0 5px 0; font-size: 18px; }
+        .game-info p { margin: 0; font-size: 12px; color: #2ecc71; }
         .play-btn {
-            background-color: #f39c12;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: 0.2s;
+            background-color: #f39c12; color: white; border: none; padding: 10px 20px;
+            border-radius: 8px; font-weight: bold; cursor: pointer;
         }
-        .play-btn:hover {
-            background-color: #e67e22;
-        }
-        /* Стили для игрового экрана, который перекрывает меню */
+        
+        /* ЭКРАН ИГРЫ В ШАШКИ */
         #game-container {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background-color: #181818;
-            z-index: 100;
-        }
-        iframe {
-            width: 100%;
-            height: calc(100vh - 50px);
-            border: none;
+            display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background-color: #1a1a1a; z-index: 100; flex-direction: column; align-items: center;
         }
         .close-btn {
-            width: 100%;
-            height: 50px;
-            background-color: #e74c3c;
-            color: white;
-            border: none;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
+            width: 100%; height: 50px; background-color: #e74c3c; color: white;
+            border: none; font-size: 16px; font-weight: bold; cursor: pointer;
         }
+        
+        /* ШАХМАТНАЯ ДОСКА */
+        .board {
+            display: grid; grid-template-columns: repeat(8, 1fr);
+            width: 90vw; max-width: 360px; height: 90vw; max-height: 360px;
+            margin-top: 40px; border: 4px solid #333;
+        }
+        .cell {
+            display: flex; justify-content: center; align-items: center; width: 100%; height: 100%;
+        }
+        .white-cell { background-color: #f0d9b5; }
+        .black-cell { background-color: #b58863; }
+        
+        /* ФИГУРЫ ШАШЕК */
+        .checker {
+            width: 80%; height: 80%; border-radius: 50%;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5), 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .white-checker { background-color: #ffffff; border: 2px solid #ccc; }
+        .black-checker { background-color: #111111; border: 2px solid #000; }
     </style>
 </head>
 <body>
@@ -97,66 +71,67 @@
 
         <div class="game-card">
             <div class="game-info">
-                <h2>♟ Шахматы</h2>
-                <p>Награда: +30 🪙 за сессию</p>
-            </div>
-            <button class="play-btn" onclick="playGame('chess')">Играть</button>
-        </div>
-
-        <div class="game-card">
-            <div class="game-info">
                 <h2>🔴 Шашки</h2>
-                <p>Награда: +30 🪙 за сессию</p>
+                <p>Награда: +30 🪙 за партию</p>
             </div>
-            <button class="play-btn" onclick="playGame('checkers')">Играть</button>
+            <button class="play-btn" onclick="startCheckers()">Играть</button>
         </div>
 
-        <div class="game-card">
+        <div class="game-card" style="opacity: 0.5;">
             <div class="game-info">
-                <h2>🎲 Нарды</h2>
-                <p>Награда: +30 🪙 за сессию</p>
+                <h2>♟ Шахматы</h2>
+                <p>Скоро открытие...</p>
             </div>
-            <button class="play-btn" onclick="playGame('backgammon')">Играть</button>
+            <button class="play-btn" style="background-color: #555;" disabled>Ожидание</button>
         </div>
     </div>
 
     <div id="game-container">
-        <button class="close-btn" onclick="closeGame()">❌ Выйти в меню</button>
-        <iframe id="game-frame" src="about:blank"></iframe>
+        <button class="close-btn" onclick="closeGame()">❌ Выйти и забрать монеты</button>
+        <div class="board" id="checker-board"></div>
     </div>
 
     <script>
-        // Инициализируем WebApp Телеграма
         const tg = window.Telegram.WebApp;
-        tg.expand(); // Раскрываем на весь экран телефона/мака
+        tg.expand();
 
-        function playGame(gameType) {
-            let gameUrl = "";
-            
-            if (gameType === 'checkers') {
-                gameUrl = "https://html5.gamedistribution.com/66a935b5a2bf4e858dfdf87ca863e414/";
-            } else if (gameType === 'chess') {
-                gameUrl = "https://html5.gamedistribution.com/894f06dfb18e47269f886f345842813a/";
-            } else if (gameType === 'backgammon') {
-                gameUrl = "https://html5.gamedistribution.com/568858f96e474533a18a99477e68fa9f/";
-            }
-
-            // Показываем контейнер игры и скрываем главное меню
-            document.getElementById('game-frame').src = gameUrl;
-            document.getElementById('game-container').style.display = 'block';
+        // Простая генерация доски шашек для демонстрации
+        function startCheckers() {
             document.getElementById('menu-container').style.display = 'none';
+            document.getElementById('game-container').style.display = 'flex';
+            
+            const board = document.getElementById('checker-board');
+            board.innerHTML = ''; // Очищаем старую доску
+            
+            for (let row = 0; row < 8; row++) {
+                for (let col = 0; col < 8; col++) {
+                    const cell = document.createElement('div');
+                    const isBlackCell = (row + col) % 2 === 1;
+                    
+                    cell.className = 'cell ' + (isBlackCell ? 'black-cell' : 'white-cell');
+                    
+                    // Расставляем демонстрационные шашки
+                    if (isBlackCell && row < 3) {
+                        const checker = document.createElement('div');
+                        checker.className = 'checker black-checker';
+                        cell.appendChild(checker);
+                    } else if (isBlackCell && row > 4) {
+                        const checker = document.createElement('div');
+                        checker.className = 'checker white-checker';
+                        cell.appendChild(checker);
+                    }
+                    
+                    board.appendChild(cell);
+                }
+            }
         }
 
         function closeGame() {
-            // Очищаем фрейм и возвращаем меню
-            document.getElementById('game-frame').src = "about:blank";
             document.getElementById('game-container').style.display = 'none';
             document.getElementById('menu-container').style.display = 'block';
             
-            // МАГИЯ: Отправляем боту данные о том, что игра закрыта
+            // Отправляем боту сигнал начисления монет
             tg.sendData("game_finished"); 
-            
-            // Закрываем само WebApp окно, так как Телеграм требует закрытия после отправки данных
             tg.close();
         }
     </script>
