@@ -56,8 +56,12 @@
             border-radius: 8px;
             font-weight: bold;
             cursor: pointer;
+            transition: 0.2s;
         }
-        /* Стили для игрового экрана, который будет перекрывать меню */
+        .play-btn:hover {
+            background-color: #e67e22;
+        }
+        /* Стили для игрового экрана, который перекрывает меню */
         #game-container {
             display: none;
             position: fixed;
@@ -94,7 +98,7 @@
         <div class="game-card">
             <div class="game-info">
                 <h2>♟ Шахматы</h2>
-                <p>Награда: +50 🪙 за победу</p>
+                <p>Награда: +30 🪙 за сессию</p>
             </div>
             <button class="play-btn" onclick="playGame('chess')">Играть</button>
         </div>
@@ -102,7 +106,7 @@
         <div class="game-card">
             <div class="game-info">
                 <h2>🔴 Шашки</h2>
-                <p>Награда: +30 🪙 за победу</p>
+                <p>Награда: +30 🪙 за сессию</p>
             </div>
             <button class="play-btn" onclick="playGame('checkers')">Играть</button>
         </div>
@@ -110,7 +114,7 @@
         <div class="game-card">
             <div class="game-info">
                 <h2>🎲 Нарды</h2>
-                <p>Награда: +40 🪙 за победу</p>
+                <p>Награда: +30 🪙 за сессию</p>
             </div>
             <button class="play-btn" onclick="playGame('backgammon')">Играть</button>
         </div>
@@ -122,37 +126,38 @@
     </div>
 
     <script>
+        // Инициализируем WebApp Телеграма
         const tg = window.Telegram.WebApp;
-        tg.expand();
+        tg.expand(); // Раскрываем на весь экран телефона/мака
 
         function playGame(gameType) {
             let gameUrl = "";
             
             if (gameType === 'checkers') {
-                // Подключаем бесплатные качественные веб-шашки
                 gameUrl = "https://html5.gamedistribution.com/66a935b5a2bf4e858dfdf87ca863e414/";
             } else if (gameType === 'chess') {
-                // Подключаем бесплатные шахматы
                 gameUrl = "https://html5.gamedistribution.com/894f06dfb18e47269f886f345842813a/";
             } else if (gameType === 'backgammon') {
-                // Подключаем нарды
                 gameUrl = "https://html5.gamedistribution.com/568858f96e474533a18a99477e68fa9f/";
             }
 
-            // Показываем контейнер игры и скрываем меню
+            // Показываем контейнер игры и скрываем главное меню
             document.getElementById('game-frame').src = gameUrl;
             document.getElementById('game-container').style.display = 'block';
             document.getElementById('menu-container').style.display = 'none';
         }
 
         function closeGame() {
-            // Закрываем игру и возвращаем меню
-            document.getElementById('game-frame').src = "";
+            // Очищаем фрейм и возвращаем меню
+            document.getElementById('game-frame').src = "about:blank";
             document.getElementById('game-container').style.display = 'none';
             document.getElementById('menu-container').style.display = 'block';
             
-            // Здесь в будущем мы сделаем начисление монет!
+            // МАГИЯ: Отправляем боту данные о том, что игра закрыта
             tg.sendData("game_finished"); 
+            
+            // Закрываем само WebApp окно, так как Телеграм требует закрытия после отправки данных
+            tg.close();
         }
     </script>
 </body>
