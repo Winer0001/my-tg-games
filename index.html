@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Игровая Панель</title>
+    <title>Игровая Панель — Настоящие Шашки</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body {
@@ -43,11 +43,15 @@
             border: none; font-size: 16px; font-weight: bold; cursor: pointer;
         }
         
+        .status-bar {
+            margin-top: 15px; font-size: 18px; font-weight: bold; color: #f1c40f;
+        }
+
         /* ИГРОВОЕ ПОЛЕ */
         .board {
             display: grid; grid-template-columns: repeat(8, 1fr);
             width: 90vw; max-width: 360px; height: 90vw; max-height: 360px;
-            margin-top: 40px; border: 4px solid #333; background-color: #b58863;
+            margin-top: 20px; border: 4px solid #333; background-color: #b58863;
         }
         .cell {
             display: flex; justify-content: center; align-items: center; width: 100%; height: 100%;
@@ -55,12 +59,12 @@
         }
         .white-cell { background-color: #f0d9b5; }
         .black-cell { background-color: #b58863; }
-        .selected-cell { border: 3px solid #2ecc71 !important; } /* Подсветка выбранной клетки */
+        .selected-cell { border: 3px solid #2ecc71 !important; }
         
         .checker {
             width: 80%; height: 80%; border-radius: 50%;
             box-shadow: inset 0 0 8px rgba(0,0,0,0.6), 0 2px 4px rgba(0,0,0,0.4);
-            pointer-events: none; /* Чтобы клик проходил сквозь шашку на клетку */
+            pointer-events: none;
         }
         .white-checker { background-color: #ffffff; border: 2px solid #ccc; }
         .black-checker { background-color: #222222; border: 2px solid #000; }
@@ -75,7 +79,7 @@
         <div class="game-card">
             <div class="game-info">
                 <h2>🔴 Шашки</h2>
-                <p>Награда: +30 🪙 за партию</p>
+                <p>Награда: +30 🪙 за победу</p>
             </div>
             <button class="play-btn" onclick="startCheckers()">Играть</button>
         </div>
@@ -83,14 +87,15 @@
         <div class="game-card" style="opacity: 0.5;">
             <div class="game-info">
                 <h2>♟ Шахматы</h2>
-                <p>Скоро открытие...</p>
+                <p>В разработке...</p>
             </div>
             <button class="play-btn" style="background-color: #555;" disabled>Ожидание</button>
         </div>
     </div>
 
     <div id="game-container">
-        <button class="close-btn" onclick="closeGame()">❌ Выйти и забрать монеты</button>
+        <button class="close-btn" onclick="exitGameWithoutReward()">❌ Выйти без награды</button>
+        <div class="status-bar" id="game-status">Ход Белых</div>
         <div class="board" id="checker-board"></div>
     </div>
 
@@ -98,10 +103,14 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        let selectedCell = null; // Здесь храним клетку, на которую нажали
+        let selectedCell = null;
+        let currentTurn = 'white'; // Белые ходят первыми
+        let gameOver = false;
 
-        // Логика создания и расстановки шашек
         function startCheckers() {
+            gameOver = false;
+            currentTurn = 'white';
+            document.getElementById('game-status').innerText = "Ход Белых";
             document.getElementById('menu-container').style.display = 'none';
             document.getElementById('game-container').style.display = 'flex';
             
@@ -114,64 +123,94 @@
                     const isBlackCell = (row + col) % 2 === 1;
                     
                     cell.className = 'cell ' + (isBlackCell ? 'black-cell' : 'white-cell');
-                    // Запоминаем координаты клетки в её свойствах
                     cell.dataset.row = row;
                     cell.dataset.col = col;
                     
-                    // Ставим черные шашки сверху
                     if (isBlackCell && row < 3) {
                         const checker = document.createElement('div');
                         checker.className = 'checker black-checker';
                         checker.dataset.color = 'black';
                         cell.appendChild(checker);
-                    } 
-                    // Ставим белые шашки снизу (это шашки игрока)
-                    else if (isBlackCell && row > 4) {
+                    } else if (isBlackCell && row > 4) {
                         const checker = document.createElement('div');
                         checker.className = 'checker white-checker';
                         checker.dataset.color = 'white';
                         cell.appendChild(checker);
                     }
                     
-                    // Навешиваем событие клика на каждую клетку
                     cell.addEventListener('click', onCellClick);
                     board.appendChild(cell);
                 }
             }
         }
 
-        // Логика кликов по доске
         function onCellClick(event) {
+            if (gameOver) return;
+
             const cell = event.currentTarget;
             const checker = cell.querySelector('.checker');
 
-            // ЕСЛИ МЫ ЕЩЕ НЕ ВЫБРАЛИ ШАШКУ:
             if (!selectedCell) {
-                // Проверяем, есть ли в клетке шашка (и пускай пока можно выбирать любую)
-                if (checker) {
+                // Выбираем шашку только своего цвета
+                if (checker && checker.dataset.color === currentTurn) {
                     selectedCell = cell;
-                    cell.classList.add('selected-cell'); // Подсвечиваем
+                    cell.classList.add('selected-cell');
                 }
-            } 
-            // ЕСЛИ ШАШКА УЖЕ БЫЛА ВЫБРАНА:
-            else {
-                // Если кликнули на ту же самую клетку — снимаем выделение
+            } else {
                 if (selectedCell === cell) {
                     selectedCell.classList.remove('selected-cell');
                     selectedCell = null;
                     return;
                 }
 
-                // Если кликнули на пустую черную клетку — перемещаем шашку туда!
                 if (!checker && cell.classList.contains('black-cell')) {
-                    const movingChecker = selectedCell.querySelector('.checker');
-                    cell.appendChild(movingChecker); // Переносим шашку в новую клетку
-                    
-                    selectedCell.classList.remove('selected-cell'); // Убираем подсветку со старой
-                    selectedCell = null; // Сбрасываем выбор
-                } 
-                // Если кликнули на другую клетку с шашкой — переключаем выбор на неё
-                else if (checker) {
+                    const fromRow = parseInt(selectedCell.dataset.row);
+                    const fromCol = parseInt(selectedCell.dataset.col);
+                    const toRow = parseInt(cell.dataset.row);
+                    const toCol = parseInt(cell.dataset.col);
+
+                    const rowDiff = toRow - fromRow;
+                    const colDiff = Math.abs(toCol - fromCol);
+
+                    let isNormalMove = false;
+                    let isEatMove = false;
+
+                    // Логика обычного хода (Белые ходят вверх -1, Черные вниз +1)
+                    if (colDiff === 1) {
+                        if (currentTurn === 'white' && rowDiff === -1) isNormalMove = true;
+                        if (currentTurn === 'black' && rowDiff === 1) isNormalMove = true;
+                    }
+
+                    // Логика атаки (перепрыгивание через 2 клетки)
+                    if (Math.abs(rowDiff) === 2 && colDiff === 2) {
+                        const midRow = (fromRow + toRow) / 2;
+                        const midCol = (fromCol + toCol) / 2;
+                        const midCell = document.querySelector(`[data-row='${midRow}'][data-col='${midCol}']`);
+                        const enemyChecker = midCell.querySelector('.checker');
+
+                        // За углом стоит враг?
+                        if (enemyChecker && enemyChecker.dataset.color !== currentTurn) {
+                            isEatMove = true;
+                            midCell.removeChild(enemyChecker); // Удаляем съеденную шашку!
+                        }
+                    }
+
+                    if (isNormalMove || isEatMove) {
+                        const movingChecker = selectedCell.querySelector('.checker');
+                        cell.appendChild(movingChecker);
+                        
+                        selectedCell.classList.remove('selected-cell');
+                        selectedCell = null;
+
+                        checkWinCondition();
+
+                        if (!gameOver) {
+                            // Передаем ход
+                            currentTurn = (currentTurn === 'white') ? 'black' : 'white';
+                            document.getElementById('game-status').innerText = (currentTurn === 'white') ? "Ход Белых" : "Ход Черных";
+                        }
+                    }
+                } else if (checker && checker.dataset.color === currentTurn) {
                     selectedCell.classList.remove('selected-cell');
                     selectedCell = cell;
                     cell.classList.add('selected-cell');
@@ -179,12 +218,41 @@
             }
         }
 
-        function closeGame() {
+        function checkWinCondition() {
+            const whiteCheckers = document.querySelectorAll('.white-checker');
+            const blackCheckers = document.querySelectorAll('.black-checker');
+
+            if (whiteCheckers.length === 0) {
+                endGame('black');
+            } else if (blackCheckers.length === 0) {
+                endGame('white');
+            }
+        }
+
+        function endGame(winner) {
+            gameOver = true;
+            if (winner === 'white') {
+                document.getElementById('game-status').innerText = "🎉 Вы победили! Белые выиграли!";
+                alert("Поздравляем! Ты победил черных и заработал монеты!");
+                
+                // Передаем боту сигнал начисления денег ТОЛЬКО при победе игрока (Белых)
+                setTimeout(() => {
+                    tg.sendData("game_finished");
+                    tg.close();
+                }, 1500);
+            } else {
+                document.getElementById('game-status').innerText = "💀 Вы проиграли! Черные выиграли.";
+                alert("Игра окончена. Черные забрали победу. Попробуй еще раз!");
+                setTimeout(() => {
+                    exitGameWithoutReward();
+                }, 1500);
+            }
+        }
+
+        function exitGameWithoutReward() {
             document.getElementById('game-container').style.display = 'none';
             document.getElementById('menu-container').style.display = 'block';
-            
-            tg.sendData("game_finished"); 
-            tg.close();
+            tg.close(); // Закрываем окно Mini App без отправки данных бэкенду
         }
     </script>
 </body>
