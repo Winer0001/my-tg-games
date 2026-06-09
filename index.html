@@ -3,96 +3,124 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Шашки Премиум</title>
+<title>Классические Шашки</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
     body {
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        background: linear-gradient(135deg, #0f0f0f, #1a1a2e);
+        background: linear-gradient(135deg, #1e1e2e, #2a2a3e);
         color: #ffffff;
         margin: 0; padding: 15px;
         display: flex; flex-direction: column; align-items: center;
-        min-height: 100vh; box-sizing: border-box; user-select: none;
+        min-height: 100vh; box-sizing: border-box;
     }
-    h1 { font-size: 29px; margin: 10px 0 5px; color: #ffd700; text-shadow: 0 0 20px #ffd700; }
-    .subtitle { color: #bbb; margin-bottom: 20px; }
+    h1 { font-size: 28px; margin: 10px 0 8px; color: #ffd700; }
+    .subtitle { color: #aaa; margin-bottom: 20px; }
 
     .game-card {
-        background: linear-gradient(145deg, #242424, #1a1a1a);
-        border-radius: 16px; width: 100%; max-width: 360px;
-        padding: 18px; margin-bottom: 15px; display: flex; justify-content: space-between;
-        align-items: center; box-shadow: 0 10px 30px rgba(0,0,0,0.7); border: 1px solid #555;
+        background: #25253a;
+        border-radius: 16px;
+        padding: 20px;
+        width: 100%;
+        max-width: 360px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+
+    button {
+        width: 100%;
+        padding: 16px;
+        margin: 10px 0;
+        font-size: 17px;
+        font-weight: bold;
+        border: none;
+        border-radius: 12px;
+        cursor: pointer;
     }
 
     #game-container {
-        display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-        background: #0a0a0a; z-index: 100; overflow: hidden;
+        display: none;
+        position: fixed;
+        top: 0; left: 0;
+        width: 100vw; height: 100vh;
+        background: #11111f;
+        z-index: 100;
     }
-    .close-btn, .music-btn {
-        width: 100%; height: 56px; margin: 8px 0;
-        border: none; font-size: 17px; font-weight: bold; cursor: pointer;
-        border-radius: 12px;
+    .close-btn {
+        width: 100%; height: 55px;
+        background: #e74c3c;
+        color: white;
+        border: none;
+        font-size: 17px;
+        font-weight: bold;
     }
-    .close-btn { background: #e74c3c; color: white; }
-    .music-btn { background: #2ecc71; color: white; }
-
     .status-bar {
-        position: absolute; top: 58px; left: 0; width: 100%;
-        text-align: center; font-size: 21px; font-weight: bold; color: #ffd700;
-        text-shadow: 0 0 12px #ffd700;
+        position: absolute;
+        top: 60px;
+        width: 100%;
+        text-align: center;
+        font-size: 20px;
+        font-weight: bold;
+        color: #ffd700;
     }
 
     .board {
-        position: absolute; top: 115px; left: 50%; transform: translateX(-50%);
-        width: 324px; height: 324px;
-        display: grid; grid-template-columns: repeat(8, 1fr);
-        border: 10px solid #3c2f2f; border-radius: 12px;
+        position: absolute;
+        top: 120px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 320px;
+        height: 320px;
+        display: grid;
+        grid-template-columns: repeat(8, 1fr);
+        border: 12px solid #3c2f2f;
+        border-radius: 8px;
         background: #5c4033;
-        box-shadow: 0 0 40px rgba(0,0,0,0.9), inset 0 0 50px rgba(0,0,0,0.7);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.8);
     }
-    /* ... (остальные стили оставил те же) */
-    .cell { width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; position: relative; cursor: pointer; transition: all 0.25s; }
+    .cell {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+        position: relative;
+    }
     .white-cell { background: #f0d9b5; }
     .black-cell { background: #5c4033; }
-    .selected { box-shadow: inset 0 0 0 5px #2ecc71; animation: pulse 1s infinite; }
-    .capture { box-shadow: inset 0 0 0 5px #e74c3c; animation: capturePulse 0.7s infinite; }
 
-    @keyframes pulse { 0%,100% {opacity:1} 50% {opacity:0.75} }
-    @keyframes capturePulse { 0%,100% {box-shadow: inset 0 0 0 5px #e74c3c} 50% {box-shadow: inset 0 0 0 7px #ff4757} }
+    .selected { box-shadow: inset 0 0 0 5px #2ecc71; }
+    .capture { box-shadow: inset 0 0 0 5px #e74c3c; }
 
     .checker {
-        width: 34px; height: 34px; border-radius: 50%;
-        box-shadow: 0 6px 15px rgba(0,0,0,0.8), inset 0 5px 10px rgba(255,255,255,0.5), inset 0 -5px 10px rgba(0,0,0,0.7);
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        box-shadow: 0 5px 12px rgba(0,0,0,0.7),
+                    inset 0 4px 8px rgba(255,255,255,0.4);
     }
-    .white-checker { background: radial-gradient(circle at 35% 35%, #fff, #ccc); border: 3px solid #eee; }
-    .black-checker { background: radial-gradient(circle at 35% 35%, #444, #111); border: 3px solid #222; }
-    .king::after { content: "👑"; font-size: 24px; position: absolute; }
+    .white-checker { background: #ffffff; border: 3px solid #ddd; }
+    .black-checker { background: #222222; border: 3px solid #111; }
+    .king { border: 4px solid #ffd700; box-shadow: 0 0 12px #ffd700; }
 </style>
 </head>
 <body>
 
 <div id="menu-container">
-    <h1>🎮 ПРЕМИУМ ШАШКИ</h1>
-    <div class="subtitle">Русские правила • Прикольная музыка</div>
+    <h1>🎮 Классические Шашки</h1>
+    <div class="subtitle">Выбери сложность</div>
     <div class="game-card">
-        <div>
-            <h2>🔴 Шашки с ИИ</h2>
-            <p>Награда: +30 🪙 за победу</p>
-        </div>
-        <button onclick="startCheckers()" style="background:#f39c12;color:white;border:none;padding:14px 28px;border-radius:12px;font-weight:bold;cursor:pointer;font-size:16px;">ИГРАТЬ</button>
+        <button onclick="startGame(1)">Лёгкий — 20 🪙</button>
+        <button onclick="startGame(2)">Средний — 35 🪙</button>
+        <button onclick="startGame(3)">Сложный — 50 🪙</button>
     </div>
 </div>
 
 <div id="game-container">
-    <button class="close-btn" onclick="exitGameWithoutReward()">❌ Выйти без награды</button>
-    <button class="music-btn" id="musicToggle">🎵 Музыка: Вкл</button>
+    <button class="close-btn" onclick="exitGame()">❌ Выйти без награды</button>
     <div class="status-bar" id="game-status">Твой ход (Белые)</div>
     <div class="board" id="checker-board"></div>
 </div>
-
-<audio id="bgMusic" loop>
-    <source src="https://assets.mixkit.co/sfx/preview/296/296.wav" type="audio/wav"> <!-- Заменено на бесплатный трек -->
-</audio>
 
 <script>
 const tg = window.Telegram.WebApp;
@@ -102,24 +130,13 @@ let boardState = [];
 let selected = null;
 let currentTurn = 'white';
 let gameOver = false;
-let musicEnabled = true;
+let difficulty = 2;
+let reward = 30;
 
-const bgMusic = document.getElementById('bgMusic');
+function startGame(level) {
+    difficulty = level;
+    reward = level === 1 ? 20 : level === 2 ? 35 : 50;
 
-function toggleMusic() {
-    musicEnabled = !musicEnabled;
-    const btn = document.getElementById('musicToggle');
-    if (musicEnabled) {
-        bgMusic.play().catch(() => {});
-        btn.textContent = "🎵 Музыка: Вкл";
-    } else {
-        bgMusic.pause();
-        btn.textContent = "🎵 Музыка: Выкл";
-    }
-}
-
-// Запуск музыки при старте игры
-function startCheckers() {
     gameOver = false;
     currentTurn = 'white';
     selected = null;
@@ -127,8 +144,6 @@ function startCheckers() {
     document.getElementById('menu-container').style.display = 'none';
     document.getElementById('game-container').style.display = 'block';
     document.getElementById('game-status').innerText = "Твой ход (Белые)";
-
-    if (musicEnabled) bgMusic.play().catch(() => {});
 
     const boardEl = document.getElementById('checker-board');
     boardEl.innerHTML = '';
@@ -161,21 +176,11 @@ function createPiece(cell, color, row, col) {
     boardState[row][col] = {color, isKing: false};
 }
 
-// ... (весь остальной код handleClick, getValidMove, executeAnimatedMove, aiMove и т.д. остаётся тот же)
-
 function handleClick(e) {
     if (gameOver || currentTurn === 'black') return;
     const cell = e.currentTarget;
     const row = +cell.dataset.row;
     const col = +cell.dataset.col;
-    const piece = boardState[row][col];
-
-    if (selected && piece && piece.color === 'white') {
-        clearHighlights();
-        selected = {row, col};
-        highlightPossibleMoves(row, col);
-        return;
-    }
 
     if (selected) {
         if (selected.row === row && selected.col === col) {
@@ -186,85 +191,98 @@ function handleClick(e) {
 
         const move = getValidMove(selected.row, selected.col, row, col);
         if (move.valid) {
-            executeAnimatedMove(selected.row, selected.col, row, col, move.captured);
+            executeMove(selected.row, selected.col, row, col, move.captured);
             clearHighlights();
             selected = null;
 
             if (!checkWin()) {
                 currentTurn = 'black';
                 document.getElementById('game-status').innerText = "🤖 Компьютер думает...";
-                setTimeout(aiMove, 650);
+                setTimeout(aiMove, 700);
             }
             return;
         }
     }
 
+    const piece = boardState[row][col];
     if (piece && piece.color === 'white') {
         selected = {row, col};
         highlightPossibleMoves(row, col);
     }
 }
 
-// (Остальные функции getValidMove, executeAnimatedMove, aiMove, checkWin, endGame и exitGame — такие же как в предыдущей версии)
-
 function getValidMove(fr, fc, tr, tc) {
     const piece = boardState[fr][fc];
     if (!piece) return {valid: false};
+
     const dx = Math.abs(tc - fc);
     const dy = Math.abs(tr - fr);
-    if (dx !== dy || dx < 1 || dx > 2) return {valid: false};
+
+    if (dx !== dy || dx === 0) return {valid: false};
     if (boardState[tr][tc]) return {valid: false};
 
     let captured = [];
+
     if (dx === 2) {
         const midR = (fr + tr) / 2;
         const midC = (fc + tc) / 2;
-        const midPiece = boardState[midR][midC];
-        if (midPiece && midPiece.color !== piece.color) captured = [{row: midR, col: midC}];
-        else return {valid: false};
-    }
+        const mid = boardState[midR][midC];
+        if (mid && mid.color !== piece.color) {
+            captured.push({row: midR, col: midC});
+        } else return {valid: false};
+    } else if (dx > 2 && piece.isKing) {
+        // Длинный ход дамки (упрощённо)
+        const capturedPieces = getCapturedAlongLine(fr, fc, tr, tc);
+        if (capturedPieces.length > 0) captured = capturedPieces;
+        else if (dx !== 1) return {valid: false};
+    } else if (dx !== 1) return {valid: false};
 
     if (!piece.isKing) {
         if (piece.color === 'white' && tr >= fr) return {valid: false};
         if (piece.color === 'black' && tr <= fr) return {valid: false};
     }
+
     return {valid: true, captured};
 }
 
-function executeAnimatedMove(fr, fc, tr, tc, captured) {
+function getCapturedAlongLine(fr, fc, tr, tc) {
+    // Простая версия для дамок
+    const captured = [];
+    const sr = Math.sign(tr - fr);
+    const sc = Math.sign(tc - fc);
+    let r = fr + sr, c = fc + sc;
+    while (r !== tr || c !== tc) {
+        if (boardState[r][c] && boardState[r][c].color !== boardState[fr][fc].color) {
+            captured.push({row: r, col: c});
+        }
+        r += sr; c += sc;
+    }
+    return captured;
+}
+
+function executeMove(fr, fc, tr, tc, captured) {
     const fromCell = getCell(fr, fc);
     const toCell = getCell(tr, tc);
     const pieceEl = fromCell.firstChild;
 
-    if (captured.length > 0) {
-        const cap = captured[0];
-        const capCell = getCell(cap.row, cap.col);
-        const capEl = capCell.firstChild;
-        if (capEl) {
-            capEl.classList.add('captured');
-            setTimeout(() => {
-                boardState[cap.row][cap.col] = null;
-                capEl.remove();
-            }, 380);
-        }
+    // Удаляем съеденные
+    captured.forEach(p => {
+        const cCell = getCell(p.row, p.col);
+        if (cCell.firstChild) cCell.firstChild.remove();
+        boardState[p.row][p.col] = null;
+    });
+
+    toCell.appendChild(pieceEl);
+    boardState[tr][tc] = boardState[fr][fc];
+    boardState[fr][fc] = null;
+
+    // Дамка
+    if (!boardState[tr][tc].isKing && 
+        ((boardState[tr][tc].color === 'white' && tr === 0) || 
+         (boardState[tr][tc].color === 'black' && tr === 7))) {
+        boardState[tr][tc].isKing = true;
+        pieceEl.classList.add('king');
     }
-
-    pieceEl.classList.add('jumping');
-    setTimeout(() => {
-        toCell.appendChild(pieceEl);
-        pieceEl.classList.remove('jumping');
-
-        boardState[tr][tc] = boardState[fr][fc];
-        boardState[fr][fc] = null;
-
-        if (!boardState[tr][tc].isKing && 
-            ((boardState[tr][tc].color === 'white' && tr === 0) || 
-             (boardState[tr][tc].color === 'black' && tr === 7))) {
-            boardState[tr][tc].isKing = true;
-            pieceEl.classList.add('king');
-            pieceEl.dataset.isKing = 'true';
-        }
-    }, 450);
 }
 
 function getCell(r, c) {
@@ -277,12 +295,13 @@ function highlightPossibleMoves(row, col) {
 }
 
 function clearHighlights() {
-    document.querySelectorAll('.cell').forEach(c => c.classList.remove('selected','possible','capture'));
+    document.querySelectorAll('.cell').forEach(c => c.classList.remove('selected', 'capture'));
 }
 
 function aiMove() {
-    let bestMove = null;
+    let best = null;
     let bestScore = -Infinity;
+
     for (let r = 0; r < 8; r++) {
         for (let c = 0; c < 8; c++) {
             if (!boardState[r][c] || boardState[r][c].color !== 'black') continue;
@@ -290,17 +309,22 @@ function aiMove() {
                 for (let tc = 0; tc < 8; tc++) {
                     const m = getValidMove(r, c, tr, tc);
                     if (m.valid) {
-                        const score = m.captured.length * 25 + Math.random() * 6;
+                        let score = m.captured.length * 30;
+                        if (difficulty > 1) score += Math.random() * 10;
+                        if (difficulty === 3) score += (7 - tr) * 3;
                         if (score > bestScore) {
                             bestScore = score;
-                            bestMove = {fr: r, fc: c, tr, tc, captured: m.captured};
+                            best = {fr: r, fc: c, tr, tc, captured: m.captured};
                         }
                     }
                 }
             }
         }
     }
-    if (bestMove) executeAnimatedMove(bestMove.fr, bestMove.fc, bestMove.tr, bestMove.tc, bestMove.captured);
+
+    if (best) {
+        executeMove(best.fr, best.fc, best.tr, best.tc, best.captured);
+    }
 
     if (!checkWin()) {
         currentTurn = 'white';
@@ -310,8 +334,12 @@ function aiMove() {
 
 function checkWin() {
     let white = 0, black = 0;
-    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
-        if (boardState[r][c]) boardState[r][c].color === 'white' ? white++ : black++;
+    for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+            if (boardState[r][c]) {
+                boardState[r][c].color === 'white' ? white++ : black++;
+            }
+        }
     }
     if (white === 0) { endGame('black'); return true; }
     if (black === 0) { endGame('white'); return true; }
@@ -320,25 +348,20 @@ function checkWin() {
 
 function endGame(winner) {
     gameOver = true;
-    bgMusic.pause();
     if (winner === 'white') {
-        document.getElementById('game-status').innerText = "🎉 ПОБЕДА!";
-        alert("Великолепно! Ты победил ИИ и получил +30 монет!");
-        setTimeout(() => tg.sendData("game_finished"), 1500);
+        document.getElementById('game-status').innerText = `🎉 ПОБЕДА! +${reward} 🪙`;
+        alert(`Отличная игра! Ты выиграл и получил ${reward} монет!`);
+        setTimeout(() => tg.sendData(`win_${reward}`), 1000);
     } else {
-        document.getElementById('game-status').innerText = "ИИ победил";
-        alert("Компьютер выиграл. Попробуй ещё раз!");
+        document.getElementById('game-status').innerText = "🤖 ИИ победил";
+        alert("Компьютер выиграл эту партию.");
     }
 }
 
-function exitGameWithoutReward() {
-    bgMusic.pause();
+function exitGame() {
     document.getElementById('game-container').style.display = 'none';
     document.getElementById('menu-container').style.display = 'block';
 }
-
-// Инициализация кнопки музыки
-document.getElementById('musicToggle').addEventListener('click', toggleMusic);
 </script>
 </body>
 </html>
