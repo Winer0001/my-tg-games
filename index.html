@@ -62,24 +62,15 @@
             text-align: center; height: 24px; line-height: 24px; flex-shrink: 0;
         }
 
-        /* АДАПТИВНЫЙ ИГРОВОЙ КОНТЕЙНЕР ДЛЯ ДОСКИ */
-        .board-wrapper {
-            width: 90%;
-            max-width: 340px;
-            margin-top: 20px;
-            container-type: inline-size; /* Позволяет доске мерить высоту по своей же ширине */
-            flex-shrink: 0;
-        }
-
-        /* ИГРОВОЕ ПОЛЕ — НЕПОКОЛЕБИМЫЙ МАТЕМАТИЧЕСКИЙ КВАДРАТ */
+        /* ИГРОВОЕ ПОЛЕ — ТЕПЕРЬ РАЗМЕР ЗАДАЕТСЯ НАПРЯМУЮ ИЗ JS */
         .board {
             display: grid; 
             grid-template-columns: repeat(8, 1fr);
-            width: 100%;        
-            height: 100cqw;      /* Высота ВСЕГДА на 100% равна текущей ширине доски */
+            margin-top: 20px; 
             border: 4px solid #333; 
             background-color: #b58863;
             box-sizing: border-box;
+            flex-shrink: 0;
         }
         
         .cell {
@@ -131,9 +122,7 @@
     <div id="game-container">
         <button class="close-btn" onclick="exitGameWithoutReward()">❌ Выйти без награды</button>
         <div class="status-bar" id="game-status">Ход Белых</div>
-        <div class="board-wrapper">
-            <div class="board" id="checker-board"></div>
-        </div>
+        <div class="board" id="checker-board"></div>
     </div>
 
     <script>
@@ -153,6 +142,14 @@
             
             const board = document.getElementById('checker-board');
             board.innerHTML = ''; 
+
+            // ЖЕЛЕЗНАЯ ФИКСАЦИЯ РАЗМЕРА ЧЕРЕЗ JS ДЛЯ ОДИНАКОВОГО ОТОБРАЖЕНИЯ ВЕЗДЕ
+            let availableWidth = window.innerWidth - 40; // Ширина экрана минус отступы
+            if (availableWidth > 340) availableWidth = 340; // Максимальный лимит для больших экранов
+            
+            // Насильно делаем ширину и высоту одинаковыми до пикселя
+            board.style.width = availableWidth + 'px';
+            board.style.height = availableWidth + 'px';
             
             for (let row = 0; row < 8; row++) {
                 for (let col = 0; col < 8; col++) {
