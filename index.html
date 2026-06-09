@@ -3,157 +3,100 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Игровая Панель — Настоящие Шашки с ИИ</title>
+<title>Шашки Премиум</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
     body {
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        background-color: #181818;
+        background: linear-gradient(135deg, #0f0f0f, #1a1a2e);
         color: #ffffff;
-        margin: 0;
-        padding: 20px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        min-height: 100vh;
-        box-sizing: border-box;
-        user-select: none;
+        margin: 0; padding: 15px;
+        display: flex; flex-direction: column; align-items: center;
+        min-height: 100vh; box-sizing: border-box; user-select: none;
     }
-    h1 { font-size: 24px; margin-bottom: 5px; color: #f39c12; }
-    .subtitle { color: #aaaaaa; margin-bottom: 25px; font-size: 14px; }
+    h1 { font-size: 29px; margin: 10px 0 5px; color: #ffd700; text-shadow: 0 0 20px #ffd700; }
+    .subtitle { color: #bbb; margin-bottom: 20px; }
 
     .game-card {
-        background-color: #242424;
-        border-radius: 12px;
-        width: 100%;
-        max-width: 350px;
-        padding: 15px;
-        margin-bottom: 15px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-        border: 1px solid #333;
-    }
-    .game-info h2 { margin: 0 0 5px 0; font-size: 18px; }
-    .game-info p { margin: 0; font-size: 12px; color: #2ecc71; }
-
-    .play-btn {
-        background-color: #f39c12;
-        color: white;
-        border: none;
-        padding: 10px 20px;
-        border-radius: 8px;
-        font-weight: bold;
-        cursor: pointer;
+        background: linear-gradient(145deg, #242424, #1a1a1a);
+        border-radius: 16px; width: 100%; max-width: 360px;
+        padding: 18px; margin-bottom: 15px; display: flex; justify-content: space-between;
+        align-items: center; box-shadow: 0 10px 30px rgba(0,0,0,0.7); border: 1px solid #555;
     }
 
     #game-container {
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        background-color: #1a1a1a;
-        z-index: 100;
-        overflow: hidden;
+        display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+        background: #0a0a0a; z-index: 100; overflow: hidden;
     }
-
     .close-btn {
-        width: 100%;
-        height: 50px;
-        background-color: #e74c3c;
-        color: white;
-        border: none;
-        font-size: 16px;
-        font-weight: bold;
-        cursor: pointer;
+        width: 100%; height: 56px; background: #e74c3c; color: white;
+        border: none; font-size: 17px; font-weight: bold; cursor: pointer;
     }
-
     .status-bar {
-        position: absolute;
-        top: 60px;
-        left: 0;
-        width: 100%;
-        font-size: 18px;
-        font-weight: bold;
-        color: #f1c40f;
-        text-align: center;
-        height: 30px;
-        line-height: 30px;
+        position: absolute; top: 58px; left: 0; width: 100%;
+        text-align: center; font-size: 21px; font-weight: bold; color: #ffd700;
+        text-shadow: 0 0 12px #ffd700;
     }
 
     .board {
-        position: absolute;
-        top: 110px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 320px;          /* ФИКСИРОВАННЫЙ РАЗМЕР */
-        height: 320px;
-        display: grid;
-        grid-template-columns: repeat(8, 1fr);
-        border: 6px solid #333;
-        background-color: #b58863;
-        box-shadow: 0 8px 16px rgba(0,0,0,0.4);
-        overflow: hidden;
+        position: absolute; top: 115px; left: 50%; transform: translateX(-50%);
+        width: 324px; height: 324px;
+        display: grid; grid-template-columns: repeat(8, 1fr);
+        border: 10px solid #3c2f2f; border-radius: 12px;
+        background: #5c4033;
+        box-shadow: 0 0 40px rgba(0,0,0,0.9), inset 0 0 50px rgba(0,0,0,0.7);
     }
-
     .cell {
-        width: 40px;
-        height: 40px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        box-sizing: border-box;
-        cursor: pointer;
-        position: relative;
+        width: 40px; height: 40px;
+        display: flex; justify-content: center; align-items: center;
+        position: relative; cursor: pointer; transition: all 0.25s;
     }
+    .white-cell { background: #f0d9b5; }
+    .black-cell { background: #5c4033; }
 
-    .white-cell { background-color: #f0d9b5; }
-    .black-cell { background-color: #b58863; }
+    .selected { box-shadow: inset 0 0 0 5px #2ecc71; animation: pulse 1s infinite; }
+    .possible { box-shadow: inset 0 0 0 4px rgba(46,204,113,0.7); }
+    .capture { box-shadow: inset 0 0 0 5px #e74c3c; animation: capturePulse 0.7s infinite; }
 
-    .selected-cell {
-        border: 3px solid #2ecc71 !important;
-        box-shadow: inset 0 0 0 3px rgba(46, 204, 113, 0.3);
-    }
+    @keyframes pulse { 0%,100% {opacity:1} 50% {opacity:0.75} }
+    @keyframes capturePulse { 0%,100% {box-shadow: inset 0 0 0 5px #e74c3c} 50% {box-shadow: inset 0 0 0 7px #ff4757} }
 
     .checker {
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        box-shadow: inset 0 0 8px rgba(0,0,0,0.6), 
-                    0 4px 8px rgba(0,0,0,0.4);
-        pointer-events: none;
-        transition: transform 0.2s;
+        width: 34px; height: 34px; border-radius: 50%;
+        box-shadow: 0 6px 15px rgba(0,0,0,0.8),
+                    inset 0 5px 10px rgba(255,255,255,0.5),
+                    inset 0 -5px 10px rgba(0,0,0,0.7);
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        display: flex; align-items: center; justify-content: center;
     }
+    .white-checker { background: radial-gradient(circle at 35% 35%, #fff, #ccc); border: 3px solid #eee; }
+    .black-checker { background: radial-gradient(circle at 35% 35%, #444, #111); border: 3px solid #222; }
+    .king::after { content: "👑"; font-size: 24px; position: absolute; filter: drop-shadow(0 0 4px gold); }
 
-    .white-checker { background-color: #ffffff; border: 3px solid #ddd; }
-    .black-checker { background-color: #222222; border: 3px solid #111; }
-
-    .king {
-        border: 4px solid #f1c40f !important;
-        box-shadow: 0 0 12px #f1c40f, inset 0 0 8px rgba(0,0,0,0.6);
+    .jumping { animation: jump 0.65s ease-in-out forwards; z-index: 20; }
+    @keyframes jump {
+        0% { transform: scale(1) translateY(0); }
+        35% { transform: scale(1.35) translateY(-45px); }
+        70% { transform: scale(0.95) translateY(-8px); }
+        100% { transform: scale(1) translateY(0); }
+    }
+    .captured { animation: explode 0.55s forwards; }
+    @keyframes explode {
+        to { transform: scale(0.1) rotate(25deg); opacity: 0; }
     }
 </style>
 </head>
 <body>
+
 <div id="menu-container">
-    <h1>🎮 ИГРОВАЯ ТЕКА</h1>
-    <div class="subtitle">Выбирай игру и зарабатывай монеты!</div>
+    <h1>🎮 ПРЕМИУМ ШАШКИ</h1>
+    <div class="subtitle">Русские правила • Красивые анимации</div>
     <div class="game-card">
-        <div class="game-info">
+        <div>
             <h2>🔴 Шашки с ИИ</h2>
             <p>Награда: +30 🪙 за победу</p>
         </div>
-        <button class="play-btn" onclick="startCheckers()">Играть</button>
-    </div>
-    <div class="game-card" style="opacity: 0.5;">
-        <div class="game-info">
-            <h2>♟ Шахматы</h2>
-            <p>В разработке...</p>
-        </div>
-        <button class="play-btn" style="background-color: #555;" disabled>Ожидание</button>
+        <button onclick="startCheckers()" style="background:#f39c12;color:white;border:none;padding:14px 28px;border-radius:12px;font-weight:bold;cursor:pointer;font-size:16px;">ИГРАТЬ</button>
     </div>
 </div>
 
@@ -163,236 +106,316 @@
     <div class="board" id="checker-board"></div>
 </div>
 
+<canvas id="confetti" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:200;display:none;"></canvas>
+
 <script>
 const tg = window.Telegram.WebApp;
 tg.expand();
 
-let selectedCell = null;
+let boardState = [];
+let selected = null;
 let currentTurn = 'white';
 let gameOver = false;
+let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+function playSound(type) {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    const filter = audioCtx.createBiquadFilter();
+    
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(audioCtx.destination);
+    
+    filter.type = 'lowpass';
+    filter.frequency.value = 1400;
+
+    if (type === 'move') {
+        osc.frequency.setValueAtTime(720, audioCtx.currentTime);
+        osc.frequency.linearRampToValueAtTime(580, audioCtx.currentTime + 0.2);
+        gain.gain.value = 0.22;
+        osc.type = 'sine';
+    } 
+    else if (type === 'capture') {
+        osc.frequency.setValueAtTime(480, audioCtx.currentTime);
+        osc.frequency.linearRampToValueAtTime(220, audioCtx.currentTime + 0.25);
+        gain.gain.value = 0.38;
+        osc.type = 'triangle';
+    } 
+    else if (type === 'king') {
+        osc.frequency.value = 960;
+        gain.gain.value = 0.32;
+        osc.type = 'sine';
+    } 
+    else if (type === 'win') {
+        osc.frequency.value = 780;
+        gain.gain.value = 0.45;
+    }
+
+    osc.start();
+    setTimeout(() => osc.stop(), type === 'capture' ? 260 : 200);
+}
+
+function createConfetti() {
+    const canvas = document.getElementById('confetti');
+    canvas.style.display = 'block';
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    
+    const pieces = [];
+    for (let i = 0; i < 160; i++) {
+        pieces.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * -canvas.height,
+            size: Math.random() * 12 + 7,
+            speed: Math.random() * 5.5 + 4,
+            angle: Math.random() * 360,
+            color: ['#ffd700', '#2ecc71', '#3498db', '#e74c3c'][Math.floor(Math.random()*4)]
+        });
+    }
+    
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        let active = false;
+        pieces.forEach(p => {
+            p.y += p.speed;
+            p.angle += 8;
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.angle * Math.PI / 180);
+            ctx.fillStyle = p.color;
+            ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size);
+            ctx.restore();
+            if (p.y < canvas.height + 30) active = true;
+        });
+        if (active) requestAnimationFrame(animate);
+        else canvas.style.display = 'none';
+    }
+    animate();
+}
 
 function startCheckers() {
     gameOver = false;
     currentTurn = 'white';
-    selectedCell = null;
+    selected = null;
 
-    document.getElementById('game-status').innerText = "Твой ход (Белые)";
     document.getElementById('menu-container').style.display = 'none';
     document.getElementById('game-container').style.display = 'block';
+    document.getElementById('game-status').innerText = "Твой ход (Белые)";
 
-    const board = document.getElementById('checker-board');
-    board.innerHTML = '';
+    const boardEl = document.getElementById('checker-board');
+    boardEl.innerHTML = '';
+    boardState = Array(8).fill().map(() => Array(8).fill(null));
 
     for (let row = 0; row < 8; row++) {
         for (let col = 0; col < 8; col++) {
             const cell = document.createElement('div');
-            const isBlackCell = (row + col) % 2 === 1;
-            
-            cell.className = `cell ${isBlackCell ? 'black-cell' : 'white-cell'}`;
+            const isDark = (row + col) % 2 === 1;
+            cell.className = `cell ${isDark ? 'black-cell' : 'white-cell'}`;
             cell.dataset.row = row;
             cell.dataset.col = col;
 
-            // Начальная расстановка
-            if (isBlackCell) {
-                if (row < 3) {
-                    const checker = document.createElement('div');
-                    checker.className = 'checker black-checker';
-                    checker.dataset.color = 'black';
-                    checker.dataset.isKing = 'false';
-                    cell.appendChild(checker);
-                } else if (row > 4) {
-                    const checker = document.createElement('div');
-                    checker.className = 'checker white-checker';
-                    checker.dataset.color = 'white';
-                    checker.dataset.isKing = 'false';
-                    cell.appendChild(checker);
-                }
+            if (isDark) {
+                if (row < 3) createPiece(cell, 'black', row, col);
+                else if (row > 4) createPiece(cell, 'white', row, col);
             }
-
-            cell.addEventListener('click', onCellClick);
-            board.appendChild(cell);
+            cell.addEventListener('click', handleClick);
+            boardEl.appendChild(cell);
         }
     }
 }
 
-function onCellClick(e) {
+function createPiece(cell, color, row, col) {
+    const piece = document.createElement('div');
+    piece.className = `checker ${color}-checker`;
+    piece.dataset.color = color;
+    piece.dataset.isKing = 'false';
+    cell.appendChild(piece);
+    boardState[row][col] = {color, isKing: false};
+}
+
+function handleClick(e) {
     if (gameOver || currentTurn === 'black') return;
-
     const cell = e.currentTarget;
-    const checker = cell.querySelector('.checker');
+    const row = +cell.dataset.row;
+    const col = +cell.dataset.col;
 
-    if (!selectedCell) {
-        if (checker && checker.dataset.color === 'white') {
-            selectedCell = cell;
-            cell.classList.add('selected-cell');
+    if (selected) {
+        if (selected.row === row && selected.col === col) {
+            clearHighlights();
+            selected = null;
+            return;
         }
-        return;
-    }
 
-    // Снять выделение при повторном клике
-    if (selectedCell === cell) {
-        selectedCell.classList.remove('selected-cell');
-        selectedCell = null;
-        return;
-    }
+        const move = getValidMove(selected.row, selected.col, row, col);
+        if (move.valid) {
+            executeAnimatedMove(selected.row, selected.col, row, col, move.captured);
+            clearHighlights();
+            selected = null;
 
-    // Перевыбор своей шашки
-    if (checker && checker.dataset.color === 'white') {
-        selectedCell.classList.remove('selected-cell');
-        selectedCell = cell;
-        cell.classList.add('selected-cell');
-        return;
-    }
-
-    // Попытка хода
-    if (!checker && cell.classList.contains('black-cell')) {
-        const move = validateMove(selectedCell, cell, 'white');
-        if (move.isValid) {
-            executeMove(selectedCell, cell, move.scannedEnemyCell);
-            selectedCell.classList.remove('selected-cell');
-            selectedCell = null;
-
-            if (!checkWinCondition()) {
+            if (!checkWin()) {
                 currentTurn = 'black';
                 document.getElementById('game-status').innerText = "🤖 Компьютер думает...";
-                setTimeout(makeAiMove, 500);
+                setTimeout(aiMove, 650);
             }
         }
-    }
-}
-
-function validateMove(fromCell, toCell, color) {
-    const fromRow = +fromCell.dataset.row;
-    const fromCol = +fromCell.dataset.col;
-    const toRow = +toCell.dataset.row;
-    const toCol = +toCell.dataset.col;
-    
-    const checker = fromCell.querySelector('.checker');
-    const isKing = checker.dataset.isKing === 'true';
-    const rowDiff = toRow - fromRow;
-    const colDiff = Math.abs(toCol - fromCol);
-
-    // Простой ход
-    if (colDiff === 1 && Math.abs(rowDiff) === 1) {
-        if (isKing) return { isValid: true, scannedEnemyCell: null };
-        if (color === 'white' && rowDiff === -1) return { isValid: true, scannedEnemyCell: null };
-        if (color === 'black' && rowDiff === 1) return { isValid: true, scannedEnemyCell: null };
-    }
-
-    // Взятие
-    if (colDiff === 2 && Math.abs(rowDiff) === 2) {
-        const midRow = (fromRow + toRow) / 2;
-        const midCol = (fromCol + toCol) / 2;
-        const midCell = document.querySelector(`[data-row="${midRow}"][data-col="${midCol}"]`);
-        
-        if (midCell) {
-            const midChecker = midCell.querySelector('.checker');
-            if (midChecker && midChecker.dataset.color !== color) {
-                return { isValid: true, scannedEnemyCell: midCell };
-            }
-        }
-    }
-
-    return { isValid: false, scannedEnemyCell: null };
-}
-
-function executeMove(fromCell, toCell, enemyCellToDelete) {
-    const movingChecker = fromCell.querySelector('.checker');
-    
-    if (enemyCellToDelete) {
-        enemyCellToDelete.innerHTML = '';
-    }
-
-    toCell.appendChild(movingChecker);
-
-    // Становится дамкой
-    const toRow = +toCell.dataset.row;
-    if (movingChecker.dataset.color === 'white' && toRow === 0) {
-        movingChecker.dataset.isKing = 'true';
-        movingChecker.classList.add('king');
-    }
-    if (movingChecker.dataset.color === 'black' && toRow === 7) {
-        movingChecker.dataset.isKing = 'true';
-        movingChecker.classList.add('king');
-    }
-}
-
-function makeAiMove() {
-    if (gameOver) return;
-
-    const blackCheckers = Array.from(document.querySelectorAll('.black-checker')).map(el => el.parentElement);
-    const emptyBlackCells = Array.from(document.querySelectorAll('.black-cell')).filter(el => !el.querySelector('.checker'));
-
-    let eatMoves = [];
-    let normalMoves = [];
-
-    for (let from of blackCheckers) {
-        for (let to of emptyBlackCells) {
-            const move = validateMove(from, to, 'black');
-            if (move.isValid) {
-                if (move.scannedEnemyCell) eatMoves.push({from, to, enemy: move.scannedEnemyCell});
-                else normalMoves.push({from, to, enemy: null});
-            }
-        }
-    }
-
-    let chosenMove;
-    if (eatMoves.length > 0) {
-        chosenMove = eatMoves[Math.floor(Math.random() * eatMoves.length)];
-    } else if (normalMoves.length > 0) {
-        chosenMove = normalMoves[Math.floor(Math.random() * normalMoves.length)];
-    } else {
-        currentTurn = 'white';
-        document.getElementById('game-status').innerText = "Твой ход (Белые)";
         return;
     }
 
-    executeMove(chosenMove.from, chosenMove.to, chosenMove.enemy);
+    const piece = boardState[row][col];
+    if (piece && piece.color === 'white') {
+        selected = {row, col};
+        highlightPossibleMoves(row, col);
+    }
+}
 
-    if (!checkWinCondition()) {
+function getValidMove(fr, fc, tr, tc) {
+    const piece = boardState[fr][fc];
+    if (!piece) return {valid: false};
+
+    const dx = Math.abs(tc - fc);
+    const dy = Math.abs(tr - fr);
+
+    if (dx !== dy || dx < 1 || dx > 2) return {valid: false};
+    if (boardState[tr][tc]) return {valid: false};
+
+    let captured = [];
+    if (dx === 2) {
+        const midR = (fr + tr) / 2;
+        const midC = (fc + tc) / 2;
+        const midPiece = boardState[midR][midC];
+        if (midPiece && midPiece.color !== piece.color) {
+            captured = [{row: midR, col: midC}];
+        } else {
+            return {valid: false};
+        }
+    }
+
+    // Ограничение направления для обычных шашек
+    if (!piece.isKing) {
+        if (piece.color === 'white' && tr >= fr) return {valid: false};
+        if (piece.color === 'black' && tr <= fr) return {valid: false};
+    }
+
+    return {valid: true, captured};
+}
+
+function executeAnimatedMove(fr, fc, tr, tc, captured) {
+    const fromCell = getCell(fr, fc);
+    const toCell = getCell(tr, tc);
+    const pieceEl = fromCell.firstChild;
+
+    playSound(captured.length > 0 ? 'capture' : 'move');
+
+    if (captured.length > 0) {
+        const cap = captured[0];
+        const capCell = getCell(cap.row, cap.col);
+        const capEl = capCell.firstChild;
+        if (capEl) {
+            capEl.classList.add('captured');
+            setTimeout(() => {
+                boardState[cap.row][cap.col] = null;
+                capEl.remove();
+            }, 380);
+        }
+    }
+
+    pieceEl.classList.add('jumping');
+    setTimeout(() => {
+        toCell.appendChild(pieceEl);
+        pieceEl.classList.remove('jumping');
+
+        boardState[tr][tc] = boardState[fr][fc];
+        boardState[fr][fc] = null;
+
+        if (!boardState[tr][tc].isKing && 
+            ((boardState[tr][tc].color === 'white' && tr === 0) || 
+             (boardState[tr][tc].color === 'black' && tr === 7))) {
+            boardState[tr][tc].isKing = true;
+            pieceEl.classList.add('king');
+            pieceEl.dataset.isKing = 'true';
+            playSound('king');
+        }
+    }, 450);
+}
+
+function getCell(r, c) {
+    return document.querySelector(`.cell[data-row="${r}"][data-col="${c}"]`);
+}
+
+function highlightPossibleMoves(row, col) {
+    clearHighlights();
+    getCell(row, col).classList.add('selected');
+}
+
+function clearHighlights() {
+    document.querySelectorAll('.cell').forEach(c => c.classList.remove('selected','possible','capture'));
+}
+
+function aiMove() {
+    let bestMove = null;
+    let bestScore = -Infinity;
+
+    for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+            if (!boardState[r][c] || boardState[r][c].color !== 'black') continue;
+            for (let tr = 0; tr < 8; tr++) {
+                for (let tc = 0; tc < 8; tc++) {
+                    const m = getValidMove(r, c, tr, tc);
+                    if (m.valid) {
+                        const score = m.captured.length * 25 + Math.random() * 6;
+                        if (score > bestScore) {
+                            bestScore = score;
+                            bestMove = {fr: r, fc: c, tr, tc, captured: m.captured};
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (bestMove) {
+        executeAnimatedMove(bestMove.fr, bestMove.fc, bestMove.tr, bestMove.tc, bestMove.captured);
+    }
+
+    if (!checkWin()) {
         currentTurn = 'white';
         document.getElementById('game-status').innerText = "Твой ход (Белые)";
     }
 }
 
-function checkWinCondition() {
-    const whiteLeft = document.querySelectorAll('.white-checker').length;
-    const blackLeft = document.querySelectorAll('.black-checker').length;
-
-    if (whiteLeft === 0) {
-        endGame('black');
-        return true;
+function checkWin() {
+    let white = 0, black = 0;
+    for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+            if (boardState[r][c]) {
+                boardState[r][c].color === 'white' ? white++ : black++;
+            }
+        }
     }
-    if (blackLeft === 0) {
-        endGame('white');
-        return true;
-    }
+    if (white === 0) { endGame('black'); return true; }
+    if (black === 0) { endGame('white'); return true; }
     return false;
 }
 
 function endGame(winner) {
     gameOver = true;
     if (winner === 'white') {
-        document.getElementById('game-status').innerText = "🎉 ПОБЕДА! +30 Монет!";
-        alert("Ты обыграл ИИ! Награда начислена.");
-        setTimeout(() => {
-            tg.sendData("game_finished");
-            tg.close();
-        }, 1200);
+        document.getElementById('game-status').innerText = "🎉 ПОБЕДА!";
+        playSound('win');
+        createConfetti();
+        alert("Великолепно! Ты победил ИИ и получил +30 монет!");
+        setTimeout(() => tg.sendData("game_finished"), 1500);
     } else {
-        document.getElementById('game-status').innerText = "💀 ИИ победил";
+        document.getElementById('game-status').innerText = "ИИ победил";
         alert("Компьютер выиграл. Попробуй ещё раз!");
-        setTimeout(() => {
-            document.getElementById('game-container').style.display = 'none';
-            document.getElementById('menu-container').style.display = 'block';
-        }, 1000);
     }
 }
 
 function exitGameWithoutReward() {
     document.getElementById('game-container').style.display = 'none';
     document.getElementById('menu-container').style.display = 'block';
-    tg.close();
 }
 </script>
 </body>
