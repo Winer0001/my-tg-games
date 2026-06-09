@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Игровая Панель — Настоящие Шашки</title>
+    <title>Игровая Панель — Настоящие Шашки с ИИ</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body {
@@ -45,13 +45,16 @@
         
         .status-bar {
             margin-top: 15px; font-size: 18px; font-weight: bold; color: #f1c40f;
+            text-align: center; min-height: 24px;
         }
 
-        /* ИГРОВОЕ ПОЛЕ */
+        /* ИГРОВОЕ ПОЛЕ — ИДЕАЛЬНЫЙ КВАДРАТ */
         .board {
             display: grid; grid-template-columns: repeat(8, 1fr);
-            width: 90vw; max-width: 360px; height: 90vw; max-height: 360px;
+            width: 90vw; max-width: 340px; 
+            aspect-ratio: 1 / 1; /* Чтобы не растягивалось */
             margin-top: 20px; border: 4px solid #333; background-color: #b58863;
+            box-sizing: border-box;
         }
         .cell {
             display: flex; justify-content: center; align-items: center; width: 100%; height: 100%;
@@ -61,13 +64,23 @@
         .black-cell { background-color: #b58863; }
         .selected-cell { border: 3px solid #2ecc71 !important; }
         
+        /* ШАШКИ */
         .checker {
             width: 80%; height: 80%; border-radius: 50%;
+            aspect-ratio: 1 / 1;
             box-shadow: inset 0 0 8px rgba(0,0,0,0.6), 0 2px 4px rgba(0,0,0,0.4);
             pointer-events: none;
+            box-sizing: border-box;
+            transition: transform 0.2s;
         }
         .white-checker { background-color: #ffffff; border: 2px solid #ccc; }
         .black-checker { background-color: #222222; border: 2px solid #000; }
+        
+        /* СТИЛЬ ДЛЯ ДАМКИ */
+        .king {
+            border: 4px solid #f1c40f !important;
+            box-shadow: 0 0 10px #f1c40f, inset 0 0 8px rgba(0,0,0,0.6);
+        }
     </style>
 </head>
 <body>
@@ -78,7 +91,7 @@
 
         <div class="game-card">
             <div class="game-info">
-                <h2>🔴 Шашки</h2>
+                <h2>🔴 Шашки с ИИ</h2>
                 <p>Награда: +30 🪙 за победу</p>
             </div>
             <button class="play-btn" onclick="startCheckers()">Играть</button>
@@ -104,13 +117,13 @@
         tg.expand();
 
         let selectedCell = null;
-        let currentTurn = 'white'; // Белые ходят первыми
+        let currentTurn = 'white'; 
         let gameOver = false;
 
         function startCheckers() {
             gameOver = false;
             currentTurn = 'white';
-            document.getElementById('game-status').innerText = "Ход Белых";
+            document.getElementById('game-status').innerText = "Твой ход (Белые)";
             document.getElementById('menu-container').style.display = 'none';
             document.getElementById('game-container').style.display = 'flex';
             
@@ -130,11 +143,13 @@
                         const checker = document.createElement('div');
                         checker.className = 'checker black-checker';
                         checker.dataset.color = 'black';
+                        checker.dataset.isKing = 'false';
                         cell.appendChild(checker);
                     } else if (isBlackCell && row > 4) {
                         const checker = document.createElement('div');
                         checker.className = 'checker white-checker';
                         checker.dataset.color = 'white';
+                        checker.dataset.isKing = 'false';
                         cell.appendChild(checker);
                     }
                     
@@ -145,14 +160,13 @@
         }
 
         function onCellClick(event) {
-            if (gameOver) return;
+            if (gameOver || currentTurn === 'black') return; // ИИ ходит, кликать нельзя
 
             const cell = event.currentTarget;
             const checker = cell.querySelector('.checker');
 
             if (!selectedCell) {
-                // Выбираем шашку только своего цвета
-                if (checker && checker.dataset.color === currentTurn) {
+                if (checker && checker.dataset.color === 'white') {
                     selectedCell = cell;
                     cell.classList.add('selected-cell');
                 }
@@ -164,57 +178,124 @@
                 }
 
                 if (!checker && cell.classList.contains('black-cell')) {
-                    const fromRow = parseInt(selectedCell.dataset.row);
-                    const fromCol = parseInt(selectedCell.dataset.col);
-                    const toRow = parseInt(cell.dataset.row);
-                    const toCol = parseInt(cell.dataset.col);
-
-                    const rowDiff = toRow - fromRow;
-                    const colDiff = Math.abs(toCol - fromCol);
-
-                    let isNormalMove = false;
-                    let isEatMove = false;
-
-                    // Логика обычного хода (Белые ходят вверх -1, Черные вниз +1)
-                    if (colDiff === 1) {
-                        if (currentTurn === 'white' && rowDiff === -1) isNormalMove = true;
-                        if (currentTurn === 'black' && rowDiff === 1) isNormalMove = true;
-                    }
-
-                    // Логика атаки (перепрыгивание через 2 клетки)
-                    if (Math.abs(rowDiff) === 2 && colDiff === 2) {
-                        const midRow = (fromRow + toRow) / 2;
-                        const midCol = (fromCol + toCol) / 2;
-                        const midCell = document.querySelector(`[data-row='${midRow}'][data-col='${midCol}']`);
-                        const enemyChecker = midCell.querySelector('.checker');
-
-                        // За углом стоит враг?
-                        if (enemyChecker && enemyChecker.dataset.color !== currentTurn) {
-                            isEatMove = true;
-                            midCell.removeChild(enemyChecker); // Удаляем съеденную шашку!
-                        }
-                    }
-
-                    if (isNormalMove || isEatMove) {
-                        const movingChecker = selectedCell.querySelector('.checker');
-                        cell.appendChild(movingChecker);
-                        
+                    const move = validateMove(selectedCell, cell, 'white');
+                    
+                    if (move.isValid) {
+                        executeMove(selectedCell, cell, move.scannedEnemyCell);
                         selectedCell.classList.remove('selected-cell');
                         selectedCell = null;
 
-                        checkWinCondition();
-
-                        if (!gameOver) {
-                            // Передаем ход
-                            currentTurn = (currentTurn === 'white') ? 'black' : 'white';
-                            document.getElementById('game-status').innerText = (currentTurn === 'white') ? "Ход Белых" : "Ход Черных";
+                        if (!checkWinCondition()) {
+                            currentTurn = 'black';
+                            document.getElementById('game-status').innerText = "🤖 Компьютер думает...";
+                            setTimeout(makeAiMove, 600); // Задержка хода ИИ для реализма
                         }
                     }
-                } else if (checker && checker.dataset.color === currentTurn) {
+                } else if (checker && checker.dataset.color === 'white') {
                     selectedCell.classList.remove('selected-cell');
                     selectedCell = cell;
                     cell.classList.add('selected-cell');
                 }
+            }
+        }
+
+        // Проверка правил хода и рубки
+        function validateMove(fromCell, toCell, color) {
+            const fromRow = parseInt(fromCell.dataset.row);
+            const fromCol = parseInt(fromCell.dataset.col);
+            const toRow = parseInt(toCell.dataset.row);
+            const toCol = parseInt(toCell.dataset.col);
+            const checker = fromCell.querySelector('.checker');
+            const isKing = checker.dataset.isKing === 'true';
+
+            const rowDiff = toRow - fromRow;
+            const colDiff = Math.abs(toCol - fromCol);
+
+            // 1. Обычный ход на 1 клетку
+            if (colDiff === 1) {
+                if (isKing && Math.abs(rowDiff) === 1) return { isValid: true, scannedEnemyCell: null };
+                if (!isKing) {
+                    if (color === 'white' && rowDiff === -1) return { isValid: true, scannedEnemyCell: null };
+                    if (color === 'black' && rowDiff === 1) return { isValid: true, scannedEnemyCell: null };
+                }
+            }
+
+            // 2. Ход с рубкой врага (перепрыгивание через 2 клетки)
+            if (Math.abs(rowDiff) === 2 && colDiff === 2) {
+                const midRow = (fromRow + toRow) / 2;
+                const midCol = (fromCol + toCol) / 2;
+                const midCell = document.querySelector(`[data-row='${midRow}'][data-col='${midCol}']`);
+                const midChecker = midCell ? midCell.querySelector('.checker') : null;
+
+                // Рубить можно во все стороны, если там враг! Назад обычной рубить можно по правилам шашек
+                if (midChecker && midChecker.dataset.color !== color) {
+                    return { isValid: true, scannedEnemyCell: midCell };
+                }
+            }
+
+            return { isValid: false, scannedEnemyCell: null };
+        }
+
+        // Выполнение перемещения фигуры на доске
+        function executeMove(fromCell, toCell, enemyCellToDelete) {
+            const movingChecker = fromCell.querySelector('.checker');
+            
+            if (enemyCellToDelete) {
+                const victim = enemyCellToDelete.querySelector('.checker');
+                if (victim) enemyCellToDelete.removeChild(victim);
+            }
+
+            toCell.appendChild(movingChecker);
+
+            // Логика превращения в Дамку
+            const toRow = parseInt(toCell.dataset.row);
+            if (movingChecker.dataset.color === 'white' && toRow === 0) {
+                movingChecker.dataset.isKing = 'true';
+                movingChecker.classList.add('king');
+            }
+            if (movingChecker.dataset.color === 'black' && toRow === 7) {
+                movingChecker.dataset.isKing = 'true';
+                movingChecker.classList.add('king');
+            }
+        }
+
+        // Искусственный Интеллект для Черных
+        function makeAiMove() {
+            if (gameOver) return;
+
+            const blackCellsWithCheckers = Array.from(document.querySelectorAll('.cell .black-checker')).map(el => el.parentElement);
+            const allEmptyCells = Array.from(document.querySelectorAll('.cell.black-cell')).filter(el => !el.querySelector('.checker'));
+
+            let possibleEatMoves = [];
+            let possibleNormalMoves = [];
+
+            // Собираем все доступные ходы ИИ
+            for (let fromCell of blackCellsWithCheckers) {
+                for (let toCell of allEmptyCells) {
+                    const move = validateMove(fromCell, toCell, 'black');
+                    if (move.isValid) {
+                        if (move.scannedEnemyCell) {
+                            possibleEatMoves.push({ from: fromCell, to: toCell, enemy: move.scannedEnemyCell });
+                        } else {
+                            possibleNormalMoves.push({ from: fromCell, to: toCell, enemy: null });
+                        }
+                    }
+                }
+            }
+
+            // Приоритет: если ИИ может срубить твою шашку — он обязательно её рубит
+            if (possibleEatMoves.length > 0) {
+                const finalMove = possibleEatMoves[Math.floor(Math.random() * possibleEatMoves.length)];
+                executeMove(finalMove.from, finalMove.to, finalMove.enemy);
+            } else if (possibleNormalMoves.length > 0) {
+                // Иначе просто делает случайный разрешенный ход вперед
+                const finalMove = possibleNormalMoves[Math.floor(Math.random() * possibleNormalMoves.length)];
+                executeMove(finalMove.from, finalMove.to, null);
+            }
+
+            if (!checkWinCondition()) {
+                currentTurn = 'white';
+                document.getElementById('game-status').innerText = "Твой ход (Белые)";
             }
         }
 
@@ -224,35 +305,38 @@
 
             if (whiteCheckers.length === 0) {
                 endGame('black');
+                return true;
             } else if (blackCheckers.length === 0) {
                 endGame('white');
+                return true;
             }
+            return false;
         }
 
         function endGame(winner) {
             gameOver = true;
             if (winner === 'white') {
-                document.getElementById('game-status').innerText = "🎉 Вы победили! Белые выиграли!";
-                alert("Поздравляем! Ты победил черных и заработал монеты!");
-                
-                // Передаем боту сигнал начисления денег ТОЛЬКО при победе игрока (Белых)
+                document.getElementById('game-status').innerText = "🎉 ПОБЕДА! +30 Монет твои!";
+                alert("Ты обыграл компьютер! Забирай свои монеты!");
                 setTimeout(() => {
                     tg.sendData("game_finished");
                     tg.close();
-                }, 1500);
+                }, 1000);
             } else {
-                document.getElementById('game-status').innerText = "💀 Вы проиграли! Черные выиграли.";
-                alert("Игра окончена. Черные забрали победу. Попробуй еще раз!");
+                document.getElementById('game-status').innerText = "💀 ИИ выиграл. Попробуй еще раз!";
+                alert("Вы проиграли компьютеру. Монеты не начислены.");
                 setTimeout(() => {
-                    exitGameWithoutReward();
-                }, 1500);
+                    document.getElementById('game-container').style.display = 'none';
+                    document.getElementById('menu-container').style.display = 'block';
+                    tg.close();
+                }, 1000);
             }
         }
 
         function exitGameWithoutReward() {
             document.getElementById('game-container').style.display = 'none';
             document.getElementById('menu-container').style.display = 'block';
-            tg.close(); // Закрываем окно Mini App без отправки данных бэкенду
+            tg.close();
         }
     </script>
 </body>
