@@ -118,43 +118,78 @@ let gameOver = false;
 let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
 function playSound(type) {
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    const filter = audioCtx.createBiquadFilter();
+    if (!audioCtx) return;
     
-    osc.connect(filter);
-    filter.connect(gain);
-    gain.connect(audioCtx.destination);
-    
-    filter.type = 'lowpass';
-    filter.frequency.value = 900;
-
     if (type === 'move') {
-        // Деревянный стук
-        osc.frequency.setValueAtTime(650, audioCtx.currentTime);
-        osc.frequency.linearRampToValueAtTime(420, audioCtx.currentTime + 0.18);
-        gain.gain.value = 0.28;
-        osc.type = 'triangle';
-    } 
-    else if (type === 'capture') {
-        // Громкий деревянный удар
-        osc.frequency.setValueAtTime(380, audioCtx.currentTime);
-        osc.frequency.linearRampToValueAtTime(140, audioCtx.currentTime + 0.3);
-        gain.gain.value = 0.42;
-        osc.type = 'sawtooth';
-    } 
-    else if (type === 'king') {
-        osc.frequency.setValueAtTime(880, audioCtx.currentTime);
-        gain.gain.value = 0.35;
-        osc.type = 'sine';
-    } 
-    else if (type === 'win') {
-        osc.frequency.value = 760;
-        gain.gain.value = 0.45;
-    }
+        // Классический деревянный стук шашки
+        const noise = audioCtx.createBufferSource();
+        const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.3, audioCtx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < data.length; i++) {
+            data[i] = Math.random() * 2 - 1;
+        }
+        noise.buffer = buffer;
 
-    osc.start();
-    setTimeout(() => osc.stop(), type === 'capture' ? 320 : 220);
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.value = 850;
+
+        const gain = audioCtx.createGain();
+        gain.gain.value = 0.35;
+        gain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
+
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(audioCtx.destination);
+        noise.start();
+        
+    } else if (type === 'capture') {
+        // Громкий удар при взятии
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        const filter = audioCtx.createBiquadFilter();
+        
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(420, audioCtx.currentTime);
+        osc.frequency.linearRampToValueAtTime(120, audioCtx.currentTime + 0.4);
+        
+        filter.type = 'lowpass';
+        filter.frequency.value = 700;
+        
+        gain.gain.value = 0.45;
+        gain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.45);
+
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.5);
+        
+    } else if (type === 'king') {
+        // Звонкий звук превращения в дамку
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = 920;
+        gain.gain.value = 0.3;
+        gain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.8);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.8);
+        
+    } else if (type === 'win') {
+        // Победа — торжественный звук
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = 680;
+        gain.gain.value = 0.4;
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        setTimeout(() => osc.stop(), 600);
+    }
 }
 
 function createConfetti() {
@@ -196,6 +231,7 @@ function createConfetti() {
     animate();
 }
 
+// Остальной код без изменений (startCheckers, handleClick и т.д.)
 function startCheckers() {
     gameOver = false;
     currentTurn = 'white';
@@ -243,7 +279,6 @@ function handleClick(e) {
     const col = +cell.dataset.col;
     const piece = boardState[row][col];
 
-    // Переключение между своими шашками
     if (selected && piece && piece.color === 'white') {
         clearHighlights();
         selected = {row, col};
@@ -273,7 +308,6 @@ function handleClick(e) {
         }
     }
 
-    // Выбор своей шашки
     if (piece && piece.color === 'white') {
         selected = {row, col};
         highlightPossibleMoves(row, col);
