@@ -67,7 +67,6 @@
                     inset 0 5px 10px rgba(255,255,255,0.5),
                     inset 0 -5px 10px rgba(0,0,0,0.7);
         transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        display: flex; align-items: center; justify-content: center;
     }
     .white-checker { background: radial-gradient(circle at 35% 35%, #fff, #ccc); border: 3px solid #eee; }
     .black-checker { background: radial-gradient(circle at 35% 35%, #444, #111); border: 3px solid #222; }
@@ -128,32 +127,34 @@ function playSound(type) {
     gain.connect(audioCtx.destination);
     
     filter.type = 'lowpass';
-    filter.frequency.value = 1400;
+    filter.frequency.value = 900;
 
     if (type === 'move') {
-        osc.frequency.setValueAtTime(720, audioCtx.currentTime);
-        osc.frequency.linearRampToValueAtTime(580, audioCtx.currentTime + 0.2);
-        gain.gain.value = 0.22;
-        osc.type = 'sine';
-    } 
-    else if (type === 'capture') {
-        osc.frequency.setValueAtTime(480, audioCtx.currentTime);
-        osc.frequency.linearRampToValueAtTime(220, audioCtx.currentTime + 0.25);
-        gain.gain.value = 0.38;
+        // Деревянный стук
+        osc.frequency.setValueAtTime(650, audioCtx.currentTime);
+        osc.frequency.linearRampToValueAtTime(420, audioCtx.currentTime + 0.18);
+        gain.gain.value = 0.28;
         osc.type = 'triangle';
     } 
+    else if (type === 'capture') {
+        // Громкий деревянный удар
+        osc.frequency.setValueAtTime(380, audioCtx.currentTime);
+        osc.frequency.linearRampToValueAtTime(140, audioCtx.currentTime + 0.3);
+        gain.gain.value = 0.42;
+        osc.type = 'sawtooth';
+    } 
     else if (type === 'king') {
-        osc.frequency.value = 960;
-        gain.gain.value = 0.32;
+        osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+        gain.gain.value = 0.35;
         osc.type = 'sine';
     } 
     else if (type === 'win') {
-        osc.frequency.value = 780;
+        osc.frequency.value = 760;
         gain.gain.value = 0.45;
     }
 
     osc.start();
-    setTimeout(() => osc.stop(), type === 'capture' ? 260 : 200);
+    setTimeout(() => osc.stop(), type === 'capture' ? 320 : 220);
 }
 
 function createConfetti() {
@@ -240,6 +241,15 @@ function handleClick(e) {
     const cell = e.currentTarget;
     const row = +cell.dataset.row;
     const col = +cell.dataset.col;
+    const piece = boardState[row][col];
+
+    // Переключение между своими шашками
+    if (selected && piece && piece.color === 'white') {
+        clearHighlights();
+        selected = {row, col};
+        highlightPossibleMoves(row, col);
+        return;
+    }
 
     if (selected) {
         if (selected.row === row && selected.col === col) {
@@ -259,11 +269,11 @@ function handleClick(e) {
                 document.getElementById('game-status').innerText = "🤖 Компьютер думает...";
                 setTimeout(aiMove, 650);
             }
+            return;
         }
-        return;
     }
 
-    const piece = boardState[row][col];
+    // Выбор своей шашки
     if (piece && piece.color === 'white') {
         selected = {row, col};
         highlightPossibleMoves(row, col);
@@ -292,7 +302,6 @@ function getValidMove(fr, fc, tr, tc) {
         }
     }
 
-    // Ограничение направления для обычных шашек
     if (!piece.isKing) {
         if (piece.color === 'white' && tr >= fr) return {valid: false};
         if (piece.color === 'black' && tr <= fr) return {valid: false};
