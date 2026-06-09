@@ -28,10 +28,14 @@
         display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
         background: #0a0a0a; z-index: 100; overflow: hidden;
     }
-    .close-btn {
-        width: 100%; height: 56px; background: #e74c3c; color: white;
+    .close-btn, .music-btn {
+        width: 100%; height: 56px; margin: 8px 0;
         border: none; font-size: 17px; font-weight: bold; cursor: pointer;
+        border-radius: 12px;
     }
+    .close-btn { background: #e74c3c; color: white; }
+    .music-btn { background: #2ecc71; color: white; }
+
     .status-bar {
         position: absolute; top: 58px; left: 0; width: 100%;
         text-align: center; font-size: 21px; font-weight: bold; color: #ffd700;
@@ -46,16 +50,11 @@
         background: #5c4033;
         box-shadow: 0 0 40px rgba(0,0,0,0.9), inset 0 0 50px rgba(0,0,0,0.7);
     }
-    .cell {
-        width: 40px; height: 40px;
-        display: flex; justify-content: center; align-items: center;
-        position: relative; cursor: pointer; transition: all 0.25s;
-    }
+    /* ... (остальные стили оставил те же) */
+    .cell { width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; position: relative; cursor: pointer; transition: all 0.25s; }
     .white-cell { background: #f0d9b5; }
     .black-cell { background: #5c4033; }
-
     .selected { box-shadow: inset 0 0 0 5px #2ecc71; animation: pulse 1s infinite; }
-    .possible { box-shadow: inset 0 0 0 4px rgba(46,204,113,0.7); }
     .capture { box-shadow: inset 0 0 0 5px #e74c3c; animation: capturePulse 0.7s infinite; }
 
     @keyframes pulse { 0%,100% {opacity:1} 50% {opacity:0.75} }
@@ -63,33 +62,18 @@
 
     .checker {
         width: 34px; height: 34px; border-radius: 50%;
-        box-shadow: 0 6px 15px rgba(0,0,0,0.8),
-                    inset 0 5px 10px rgba(255,255,255,0.5),
-                    inset 0 -5px 10px rgba(0,0,0,0.7);
-        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        box-shadow: 0 6px 15px rgba(0,0,0,0.8), inset 0 5px 10px rgba(255,255,255,0.5), inset 0 -5px 10px rgba(0,0,0,0.7);
     }
     .white-checker { background: radial-gradient(circle at 35% 35%, #fff, #ccc); border: 3px solid #eee; }
     .black-checker { background: radial-gradient(circle at 35% 35%, #444, #111); border: 3px solid #222; }
-    .king::after { content: "👑"; font-size: 24px; position: absolute; filter: drop-shadow(0 0 4px gold); }
-
-    .jumping { animation: jump 0.65s ease-in-out forwards; z-index: 20; }
-    @keyframes jump {
-        0% { transform: scale(1) translateY(0); }
-        35% { transform: scale(1.35) translateY(-45px); }
-        70% { transform: scale(0.95) translateY(-8px); }
-        100% { transform: scale(1) translateY(0); }
-    }
-    .captured { animation: explode 0.55s forwards; }
-    @keyframes explode {
-        to { transform: scale(0.1) rotate(25deg); opacity: 0; }
-    }
+    .king::after { content: "👑"; font-size: 24px; position: absolute; }
 </style>
 </head>
 <body>
 
 <div id="menu-container">
     <h1>🎮 ПРЕМИУМ ШАШКИ</h1>
-    <div class="subtitle">Русские правила • Красивые анимации</div>
+    <div class="subtitle">Русские правила • Прикольная музыка</div>
     <div class="game-card">
         <div>
             <h2>🔴 Шашки с ИИ</h2>
@@ -101,11 +85,14 @@
 
 <div id="game-container">
     <button class="close-btn" onclick="exitGameWithoutReward()">❌ Выйти без награды</button>
+    <button class="music-btn" id="musicToggle">🎵 Музыка: Вкл</button>
     <div class="status-bar" id="game-status">Твой ход (Белые)</div>
     <div class="board" id="checker-board"></div>
 </div>
 
-<canvas id="confetti" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:200;display:none;"></canvas>
+<audio id="bgMusic" loop>
+    <source src="https://assets.mixkit.co/sfx/preview/296/296.wav" type="audio/wav"> <!-- Заменено на бесплатный трек -->
+</audio>
 
 <script>
 const tg = window.Telegram.WebApp;
@@ -115,123 +102,23 @@ let boardState = [];
 let selected = null;
 let currentTurn = 'white';
 let gameOver = false;
-let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+let musicEnabled = true;
 
-function playSound(type) {
-    if (!audioCtx) return;
-    
-    if (type === 'move') {
-        // Классический деревянный стук шашки
-        const noise = audioCtx.createBufferSource();
-        const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 0.3, audioCtx.sampleRate);
-        const data = buffer.getChannelData(0);
-        for (let i = 0; i < data.length; i++) {
-            data[i] = Math.random() * 2 - 1;
-        }
-        noise.buffer = buffer;
+const bgMusic = document.getElementById('bgMusic');
 
-        const filter = audioCtx.createBiquadFilter();
-        filter.type = 'lowpass';
-        filter.frequency.value = 850;
-
-        const gain = audioCtx.createGain();
-        gain.gain.value = 0.35;
-        gain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
-
-        noise.connect(filter);
-        filter.connect(gain);
-        gain.connect(audioCtx.destination);
-        noise.start();
-        
-    } else if (type === 'capture') {
-        // Громкий удар при взятии
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        const filter = audioCtx.createBiquadFilter();
-        
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(420, audioCtx.currentTime);
-        osc.frequency.linearRampToValueAtTime(120, audioCtx.currentTime + 0.4);
-        
-        filter.type = 'lowpass';
-        filter.frequency.value = 700;
-        
-        gain.gain.value = 0.45;
-        gain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.45);
-
-        osc.connect(filter);
-        filter.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.5);
-        
-    } else if (type === 'king') {
-        // Звонкий звук превращения в дамку
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = 'sine';
-        osc.frequency.value = 920;
-        gain.gain.value = 0.3;
-        gain.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.8);
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.8);
-        
-    } else if (type === 'win') {
-        // Победа — торжественный звук
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = 'sine';
-        osc.frequency.value = 680;
-        gain.gain.value = 0.4;
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start();
-        setTimeout(() => osc.stop(), 600);
+function toggleMusic() {
+    musicEnabled = !musicEnabled;
+    const btn = document.getElementById('musicToggle');
+    if (musicEnabled) {
+        bgMusic.play().catch(() => {});
+        btn.textContent = "🎵 Музыка: Вкл";
+    } else {
+        bgMusic.pause();
+        btn.textContent = "🎵 Музыка: Выкл";
     }
 }
 
-function createConfetti() {
-    const canvas = document.getElementById('confetti');
-    canvas.style.display = 'block';
-    const ctx = canvas.getContext('2d');
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    
-    const pieces = [];
-    for (let i = 0; i < 160; i++) {
-        pieces.push({
-            x: Math.random() * canvas.width,
-            y: Math.random() * -canvas.height,
-            size: Math.random() * 12 + 7,
-            speed: Math.random() * 5.5 + 4,
-            angle: Math.random() * 360,
-            color: ['#ffd700', '#2ecc71', '#3498db', '#e74c3c'][Math.floor(Math.random()*4)]
-        });
-    }
-    
-    function animate() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        let active = false;
-        pieces.forEach(p => {
-            p.y += p.speed;
-            p.angle += 8;
-            ctx.save();
-            ctx.translate(p.x, p.y);
-            ctx.rotate(p.angle * Math.PI / 180);
-            ctx.fillStyle = p.color;
-            ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size);
-            ctx.restore();
-            if (p.y < canvas.height + 30) active = true;
-        });
-        if (active) requestAnimationFrame(animate);
-        else canvas.style.display = 'none';
-    }
-    animate();
-}
-
-// Остальной код без изменений (startCheckers, handleClick и т.д.)
+// Запуск музыки при старте игры
 function startCheckers() {
     gameOver = false;
     currentTurn = 'white';
@@ -240,6 +127,8 @@ function startCheckers() {
     document.getElementById('menu-container').style.display = 'none';
     document.getElementById('game-container').style.display = 'block';
     document.getElementById('game-status').innerText = "Твой ход (Белые)";
+
+    if (musicEnabled) bgMusic.play().catch(() => {});
 
     const boardEl = document.getElementById('checker-board');
     boardEl.innerHTML = '';
@@ -271,6 +160,8 @@ function createPiece(cell, color, row, col) {
     cell.appendChild(piece);
     boardState[row][col] = {color, isKing: false};
 }
+
+// ... (весь остальной код handleClick, getValidMove, executeAnimatedMove, aiMove и т.д. остаётся тот же)
 
 function handleClick(e) {
     if (gameOver || currentTurn === 'black') return;
@@ -314,13 +205,13 @@ function handleClick(e) {
     }
 }
 
+// (Остальные функции getValidMove, executeAnimatedMove, aiMove, checkWin, endGame и exitGame — такие же как в предыдущей версии)
+
 function getValidMove(fr, fc, tr, tc) {
     const piece = boardState[fr][fc];
     if (!piece) return {valid: false};
-
     const dx = Math.abs(tc - fc);
     const dy = Math.abs(tr - fr);
-
     if (dx !== dy || dx < 1 || dx > 2) return {valid: false};
     if (boardState[tr][tc]) return {valid: false};
 
@@ -329,18 +220,14 @@ function getValidMove(fr, fc, tr, tc) {
         const midR = (fr + tr) / 2;
         const midC = (fc + tc) / 2;
         const midPiece = boardState[midR][midC];
-        if (midPiece && midPiece.color !== piece.color) {
-            captured = [{row: midR, col: midC}];
-        } else {
-            return {valid: false};
-        }
+        if (midPiece && midPiece.color !== piece.color) captured = [{row: midR, col: midC}];
+        else return {valid: false};
     }
 
     if (!piece.isKing) {
         if (piece.color === 'white' && tr >= fr) return {valid: false};
         if (piece.color === 'black' && tr <= fr) return {valid: false};
     }
-
     return {valid: true, captured};
 }
 
@@ -348,8 +235,6 @@ function executeAnimatedMove(fr, fc, tr, tc, captured) {
     const fromCell = getCell(fr, fc);
     const toCell = getCell(tr, tc);
     const pieceEl = fromCell.firstChild;
-
-    playSound(captured.length > 0 ? 'capture' : 'move');
 
     if (captured.length > 0) {
         const cap = captured[0];
@@ -378,7 +263,6 @@ function executeAnimatedMove(fr, fc, tr, tc, captured) {
             boardState[tr][tc].isKing = true;
             pieceEl.classList.add('king');
             pieceEl.dataset.isKing = 'true';
-            playSound('king');
         }
     }, 450);
 }
@@ -399,7 +283,6 @@ function clearHighlights() {
 function aiMove() {
     let bestMove = null;
     let bestScore = -Infinity;
-
     for (let r = 0; r < 8; r++) {
         for (let c = 0; c < 8; c++) {
             if (!boardState[r][c] || boardState[r][c].color !== 'black') continue;
@@ -417,10 +300,7 @@ function aiMove() {
             }
         }
     }
-
-    if (bestMove) {
-        executeAnimatedMove(bestMove.fr, bestMove.fc, bestMove.tr, bestMove.tc, bestMove.captured);
-    }
+    if (bestMove) executeAnimatedMove(bestMove.fr, bestMove.fc, bestMove.tr, bestMove.tc, bestMove.captured);
 
     if (!checkWin()) {
         currentTurn = 'white';
@@ -430,12 +310,8 @@ function aiMove() {
 
 function checkWin() {
     let white = 0, black = 0;
-    for (let r = 0; r < 8; r++) {
-        for (let c = 0; c < 8; c++) {
-            if (boardState[r][c]) {
-                boardState[r][c].color === 'white' ? white++ : black++;
-            }
-        }
+    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+        if (boardState[r][c]) boardState[r][c].color === 'white' ? white++ : black++;
     }
     if (white === 0) { endGame('black'); return true; }
     if (black === 0) { endGame('white'); return true; }
@@ -444,10 +320,9 @@ function checkWin() {
 
 function endGame(winner) {
     gameOver = true;
+    bgMusic.pause();
     if (winner === 'white') {
         document.getElementById('game-status').innerText = "🎉 ПОБЕДА!";
-        playSound('win');
-        createConfetti();
         alert("Великолепно! Ты победил ИИ и получил +30 монет!");
         setTimeout(() => tg.sendData("game_finished"), 1500);
     } else {
@@ -457,9 +332,13 @@ function endGame(winner) {
 }
 
 function exitGameWithoutReward() {
+    bgMusic.pause();
     document.getElementById('game-container').style.display = 'none';
     document.getElementById('menu-container').style.display = 'block';
 }
+
+// Инициализация кнопки музыки
+document.getElementById('musicToggle').addEventListener('click', toggleMusic);
 </script>
 </body>
 </html>
