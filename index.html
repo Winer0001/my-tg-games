@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Классические Шашки</title>
+<title>Шашки Премиум</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
     body {
@@ -17,20 +17,12 @@
     h1 { font-size: 29px; margin: 10px 0 5px; color: #ffd700; text-shadow: 0 0 20px #ffd700; }
     .subtitle { color: #bbb; margin-bottom: 20px; }
 
-    .game-card, .difficulty-card {
+    .game-card {
         background: linear-gradient(145deg, #242424, #1a1a1a);
         border-radius: 16px; width: 100%; max-width: 360px;
-        padding: 18px; margin-bottom: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.7);
-        border: 1px solid #555;
+        padding: 18px; margin-bottom: 15px; display: flex; justify-content: space-between;
+        align-items: center; box-shadow: 0 10px 30px rgba(0,0,0,0.7); border: 1px solid #555;
     }
-
-    button {
-        background: #f39c12; color: white; border: none;
-        padding: 14px 28px; border-radius: 12px; font-weight: bold;
-        font-size: 16px; cursor: pointer; margin: 8px 0;
-        width: 100%;
-    }
-    button:hover { background: #e08e10; }
 
     #game-container {
         display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
@@ -75,6 +67,7 @@
                     inset 0 5px 10px rgba(255,255,255,0.5),
                     inset 0 -5px 10px rgba(0,0,0,0.7);
         transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        display: flex; align-items: center; justify-content: center;
     }
     .white-checker { background: radial-gradient(circle at 35% 35%, #fff, #ccc); border: 3px solid #eee; }
     .black-checker { background: radial-gradient(circle at 35% 35%, #444, #111); border: 3px solid #222; }
@@ -96,13 +89,14 @@
 <body>
 
 <div id="menu-container">
-    <h1>🎮 Классические Шашки</h1>
-    <div class="subtitle">Выбери сложность</div>
-    
-    <div class="difficulty-card">
-        <button onclick="startGame(1)">Лёгкий</button>
-        <button onclick="startGame(2)">Средний</button>
-        <button onclick="startGame(3)">Сложный</button>
+    <h1>🎮 ПРЕМИУМ ШАШКИ</h1>
+    <div class="subtitle">Русские правила • Красивые анимации</div>
+    <div class="game-card">
+        <div>
+            <h2>🔴 Шашки с ИИ</h2>
+            <p>Награда: +30 🪙 за победу</p>
+        </div>
+        <button onclick="startCheckers()" style="background:#f39c12;color:white;border:none;padding:14px 28px;border-radius:12px;font-weight:bold;cursor:pointer;font-size:16px;">ИГРАТЬ</button>
     </div>
 </div>
 
@@ -122,7 +116,6 @@ let boardState = [];
 let selected = null;
 let currentTurn = 'white';
 let gameOver = false;
-let difficulty = 2; // 1 - лёгкий, 2 - средний, 3 - сложный
 let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
 function playSound(type) {
@@ -135,32 +128,32 @@ function playSound(type) {
     gain.connect(audioCtx.destination);
     
     filter.type = 'lowpass';
-    filter.frequency.value = 1200;
+    filter.frequency.value = 1400;
 
     if (type === 'move') {
-        osc.frequency.setValueAtTime(680, audioCtx.currentTime);
-        osc.frequency.linearRampToValueAtTime(520, audioCtx.currentTime + 0.25);
-        gain.gain.value = 0.25;
+        osc.frequency.setValueAtTime(720, audioCtx.currentTime);
+        osc.frequency.linearRampToValueAtTime(580, audioCtx.currentTime + 0.2);
+        gain.gain.value = 0.22;
         osc.type = 'sine';
     } 
     else if (type === 'capture') {
-        osc.frequency.setValueAtTime(420, audioCtx.currentTime);
-        osc.frequency.linearRampToValueAtTime(180, audioCtx.currentTime + 0.3);
-        gain.gain.value = 0.35;
+        osc.frequency.setValueAtTime(480, audioCtx.currentTime);
+        osc.frequency.linearRampToValueAtTime(220, audioCtx.currentTime + 0.25);
+        gain.gain.value = 0.38;
         osc.type = 'triangle';
     } 
     else if (type === 'king') {
-        osc.frequency.value = 920;
-        gain.gain.value = 0.3;
+        osc.frequency.value = 960;
+        gain.gain.value = 0.32;
         osc.type = 'sine';
     } 
     else if (type === 'win') {
-        osc.frequency.value = 760;
-        gain.gain.value = 0.4;
+        osc.frequency.value = 780;
+        gain.gain.value = 0.45;
     }
 
     osc.start();
-    setTimeout(() => osc.stop(), type === 'capture' ? 280 : 220);
+    setTimeout(() => osc.stop(), type === 'capture' ? 260 : 200);
 }
 
 function createConfetti() {
@@ -175,8 +168,8 @@ function createConfetti() {
         pieces.push({
             x: Math.random() * canvas.width,
             y: Math.random() * -canvas.height,
-            size: Math.random() * 11 + 7,
-            speed: Math.random() * 5 + 4,
+            size: Math.random() * 12 + 7,
+            speed: Math.random() * 5.5 + 4,
             angle: Math.random() * 360,
             color: ['#ffd700', '#2ecc71', '#3498db', '#e74c3c'][Math.floor(Math.random()*4)]
         });
@@ -187,14 +180,14 @@ function createConfetti() {
         let active = false;
         pieces.forEach(p => {
             p.y += p.speed;
-            p.angle += 7;
+            p.angle += 8;
             ctx.save();
             ctx.translate(p.x, p.y);
             ctx.rotate(p.angle * Math.PI / 180);
             ctx.fillStyle = p.color;
             ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size);
             ctx.restore();
-            if (p.y < canvas.height) active = true;
+            if (p.y < canvas.height + 30) active = true;
         });
         if (active) requestAnimationFrame(animate);
         else canvas.style.display = 'none';
@@ -202,8 +195,7 @@ function createConfetti() {
     animate();
 }
 
-function startGame(level) {
-    difficulty = level;
+function startCheckers() {
     gameOver = false;
     currentTurn = 'white';
     selected = null;
@@ -258,14 +250,14 @@ function handleClick(e) {
 
         const move = getValidMove(selected.row, selected.col, row, col);
         if (move.valid) {
-            executeMove(selected.row, selected.col, row, col, move.captured);
+            executeAnimatedMove(selected.row, selected.col, row, col, move.captured);
             clearHighlights();
             selected = null;
 
             if (!checkWin()) {
                 currentTurn = 'black';
                 document.getElementById('game-status').innerText = "🤖 Компьютер думает...";
-                setTimeout(() => aiMove(), 600);
+                setTimeout(aiMove, 650);
             }
         }
         return;
@@ -281,24 +273,26 @@ function handleClick(e) {
 function getValidMove(fr, fc, tr, tc) {
     const piece = boardState[fr][fc];
     if (!piece) return {valid: false};
+
     const dx = Math.abs(tc - fc);
     const dy = Math.abs(tr - fr);
 
     if (dx !== dy || dx < 1 || dx > 2) return {valid: false};
+    if (boardState[tr][tc]) return {valid: false};
 
-    const captured = [];
+    let captured = [];
     if (dx === 2) {
         const midR = (fr + tr) / 2;
         const midC = (fc + tc) / 2;
         const midPiece = boardState[midR][midC];
         if (midPiece && midPiece.color !== piece.color) {
-            captured.push({row: midR, col: midC});
-        } else return {valid: false};
+            captured = [{row: midR, col: midC}];
+        } else {
+            return {valid: false};
+        }
     }
 
-    if (boardState[tr][tc]) return {valid: false};
-
-    // Проверка направления для обычных шашек
+    // Ограничение направления для обычных шашек
     if (!piece.isKing) {
         if (piece.color === 'white' && tr >= fr) return {valid: false};
         if (piece.color === 'black' && tr <= fr) return {valid: false};
@@ -307,14 +301,13 @@ function getValidMove(fr, fc, tr, tc) {
     return {valid: true, captured};
 }
 
-function executeMove(fr, fc, tr, tc, captured) {
+function executeAnimatedMove(fr, fc, tr, tc, captured) {
     const fromCell = getCell(fr, fc);
     const toCell = getCell(tr, tc);
     const pieceEl = fromCell.firstChild;
 
     playSound(captured.length > 0 ? 'capture' : 'move');
 
-    // Удаляем съеденную шашку
     if (captured.length > 0) {
         const cap = captured[0];
         const capCell = getCell(cap.row, cap.col);
@@ -336,7 +329,6 @@ function executeMove(fr, fc, tr, tc, captured) {
         boardState[tr][tc] = boardState[fr][fc];
         boardState[fr][fc] = null;
 
-        // Превращение в дамку
         if (!boardState[tr][tc].isKing && 
             ((boardState[tr][tc].color === 'white' && tr === 0) || 
              (boardState[tr][tc].color === 'black' && tr === 7))) {
@@ -358,9 +350,7 @@ function highlightPossibleMoves(row, col) {
 }
 
 function clearHighlights() {
-    document.querySelectorAll('.cell').forEach(c => {
-        c.classList.remove('selected', 'possible', 'capture');
-    });
+    document.querySelectorAll('.cell').forEach(c => c.classList.remove('selected','possible','capture'));
 }
 
 function aiMove() {
@@ -370,14 +360,11 @@ function aiMove() {
     for (let r = 0; r < 8; r++) {
         for (let c = 0; c < 8; c++) {
             if (!boardState[r][c] || boardState[r][c].color !== 'black') continue;
-
             for (let tr = 0; tr < 8; tr++) {
                 for (let tc = 0; tc < 8; tc++) {
                     const m = getValidMove(r, c, tr, tc);
                     if (m.valid) {
-                        let score = m.captured.length * 20;
-                        if (difficulty >= 2) score += Math.random() * 8;
-                        if (difficulty === 3) score += (7 - tr) * 2; // предпочитает продвигаться
+                        const score = m.captured.length * 25 + Math.random() * 6;
                         if (score > bestScore) {
                             bestScore = score;
                             bestMove = {fr: r, fc: c, tr, tc, captured: m.captured};
@@ -389,7 +376,7 @@ function aiMove() {
     }
 
     if (bestMove) {
-        executeMove(bestMove.fr, bestMove.fc, bestMove.tr, bestMove.tc, bestMove.captured);
+        executeAnimatedMove(bestMove.fr, bestMove.fc, bestMove.tr, bestMove.tc, bestMove.captured);
     }
 
     if (!checkWin()) {
@@ -418,11 +405,11 @@ function endGame(winner) {
         document.getElementById('game-status').innerText = "🎉 ПОБЕДА!";
         playSound('win');
         createConfetti();
-        alert("Отличная игра! Ты победил и получил +30 монет!");
-        setTimeout(() => tg.sendData("game_finished"), 1200);
+        alert("Великолепно! Ты победил ИИ и получил +30 монет!");
+        setTimeout(() => tg.sendData("game_finished"), 1500);
     } else {
         document.getElementById('game-status').innerText = "ИИ победил";
-        alert("Компьютер оказался сильнее в этот раз.");
+        alert("Компьютер выиграл. Попробуй ещё раз!");
     }
 }
 
