@@ -36,6 +36,7 @@
             border-radius: 8px; font-weight: bold; cursor: pointer;
         }
         
+        /* ПОЛНОЕ УДАЛЕНИЕ FLEXBOX, КОТОРЫЙ СЖИМАЛ ДОСКУ */
         #game-container {
             display: none; 
             position: fixed; 
@@ -45,32 +46,39 @@
             height: 100vh;
             background-color: #1a1a1a; 
             z-index: 100; 
-            flex-direction: column; 
-            align-items: center;
-            justify-content: flex-start;
             box-sizing: border-box;
             overflow: hidden;
         }
         .close-btn {
             width: 100%; height: 50px; background-color: #e74c3c; color: white;
             border: none; font-size: 16px; font-weight: bold; cursor: pointer;
-            flex-shrink: 0;
         }
         
+        /* Позиционируем статус и доску через фиксированные отступы сверху */
         .status-bar {
-            margin-top: 20px; font-size: 18px; font-weight: bold; color: #f1c40f;
-            text-align: center; height: 24px; line-height: 24px; flex-shrink: 0;
+            position: absolute;
+            top: 70px;
+            left: 0;
+            width: 100%;
+            font-size: 18px; 
+            font-weight: bold; 
+            color: #f1c40f;
+            text-align: center; 
+            height: 24px; 
+            line-height: 24px;
         }
 
-        /* ИГРОВОЕ ПОЛЕ — ТЕПЕРЬ РАЗМЕР ЗАДАЕТСЯ НАПРЯМУЮ ИЗ JS */
+        /* ИГРОВОЕ ПОЛЕ — ТЕПЕРЬ ОНО АБСОЛЮТНО НЕЗАВИСИМО */
         .board {
             display: grid; 
             grid-template-columns: repeat(8, 1fr);
-            margin-top: 20px; 
+            position: absolute;
+            top: 120px;
+            left: 50%;
+            transform: translateX(-50%); /* Центрирование по горизонту */
             border: 4px solid #333; 
             background-color: #b58863;
             box-sizing: border-box;
-            flex-shrink: 0;
         }
         
         .cell {
@@ -143,13 +151,13 @@
             const board = document.getElementById('checker-board');
             board.innerHTML = ''; 
 
-            // ЖЕЛЕЗНАЯ ФИКСАЦИЯ РАЗМЕРА ЧЕРЕЗ JS ДЛЯ ОДИНАКОВОГО ОТОБРАЖЕНИЯ ВЕЗДЕ
-            let availableWidth = window.innerWidth - 40; // Ширина экрана минус отступы
-            if (availableWidth > 340) availableWidth = 340; // Максимальный лимит для больших экранов
+            // РАСЧЕТ РАЗМЕРА БЕЗ ВЛИЯНИЯ ВНЕШНИХ СТИЛЕЙ
+            let size = window.innerWidth - 40; 
+            if (size > 340) size = 340; 
             
-            // Насильно делаем ширину и высоту одинаковыми до пикселя
-            board.style.width = availableWidth + 'px';
-            board.style.height = availableWidth + 'px';
+            // Насильно забиваем одинаковые пиксели
+            board.style.width = size + 'px';
+            board.style.height = size + 'px';
             
             for (let row = 0; row < 8; row++) {
                 for (let col = 0; col < 8; col++) {
