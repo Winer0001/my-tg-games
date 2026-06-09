@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Игровая Панель — Настоящие Шашки с ИИ</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
@@ -18,6 +18,7 @@
             min-height: 100vh;
             box-sizing: border-box;
             user-select: none;
+            -webkit-user-select: none;
         }
         h1 { font-size: 24px; margin-bottom: 5px; color: #f39c12; }
         .subtitle { color: #aaaaaa; margin-bottom: 25px; font-size: 14px; }
@@ -26,6 +27,7 @@
             background-color: #242424; border-radius: 12px; width: 100%; max-width: 350px;
             padding: 15px; margin-bottom: 15px; display: flex; justify-content: space-between;
             align-items: center; box-shadow: 0 4px 6px rgba(0,0,0,0.3); border: 1px solid #333;
+            box-sizing: border-box;
         }
         .game-info h2 { margin: 0 0 5px 0; font-size: 18px; }
         .game-info p { margin: 0; font-size: 12px; color: #2ecc71; }
@@ -34,28 +36,46 @@
             border-radius: 8px; font-weight: bold; cursor: pointer;
         }
         
+        /* ЖЕСТКИЙ КОНТЕЙНЕР ИГРЫ — БЕЗ СКАЧКОВ И СДВИГОВ */
         #game-container {
-            display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background-color: #1a1a1a; z-index: 100; flex-direction: column; align-items: center;
+            display: none; 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100vw; 
+            height: 100vh;
+            background-color: #1a1a1a; 
+            z-index: 100; 
+            flex-direction: column; 
+            align-items: center;
+            justify-content: flex-start;
+            box-sizing: border-box;
+            overflow: hidden;
         }
         .close-btn {
             width: 100%; height: 50px; background-color: #e74c3c; color: white;
             border: none; font-size: 16px; font-weight: bold; cursor: pointer;
+            flex-shrink: 0;
         }
         
         .status-bar {
-            margin-top: 15px; font-size: 18px; font-weight: bold; color: #f1c40f;
-            text-align: center; min-height: 24px;
+            margin-top: 20px; font-size: 18px; font-weight: bold; color: #f1c40f;
+            text-align: center; height: 24px; line-height: 24px; flex-shrink: 0;
         }
 
-        /* ИГРОВОЕ ПОЛЕ — ИДЕАЛЬНЫЙ КВАДРАТ */
+        /* ИГРОВОЕ ПОЛЕ — СТРОГИЙ ЖЕЛЕЗОБЕТОННЫЙ ФИКСИРОВАННЫЙ РАЗМЕР */
         .board {
-            display: grid; grid-template-columns: repeat(8, 1fr);
-            width: 90vw; max-width: 340px; 
-            aspect-ratio: 1 / 1; /* Чтобы не растягивалось */
-            margin-top: 20px; border: 4px solid #333; background-color: #b58863;
+            display: grid; 
+            grid-template-columns: repeat(8, 1fr);
+            width: 330px;        /* Строго заданная ширина в пикселях */
+            height: 330px;       /* Строго заданная высота в пикселях */
+            margin-top: 20px; 
+            border: 4px solid #333; 
+            background-color: #b58863;
             box-sizing: border-box;
+            flex-shrink: 0;      /* Запрещает браузеру сжимать или деформировать доску */
         }
+        
         .cell {
             display: flex; justify-content: center; align-items: center; width: 100%; height: 100%;
             box-sizing: border-box; cursor: pointer;
@@ -64,14 +84,12 @@
         .black-cell { background-color: #b58863; }
         .selected-cell { border: 3px solid #2ecc71 !important; }
         
-        /* ШАШКИ */
+        /* ШАШКИ — ИДЕАЛЬНЫЙ КРУГ ИЗ-ЗА ЖЕСТКИХ РАЗМЕРОВ КЛЕТКИ */
         .checker {
             width: 80%; height: 80%; border-radius: 50%;
-            aspect-ratio: 1 / 1;
             box-shadow: inset 0 0 8px rgba(0,0,0,0.6), 0 2px 4px rgba(0,0,0,0.4);
             pointer-events: none;
             box-sizing: border-box;
-            transition: transform 0.2s;
         }
         .white-checker { background-color: #ffffff; border: 2px solid #ccc; }
         .black-checker { background-color: #222222; border: 2px solid #000; }
@@ -85,6 +103,7 @@
 </head>
 <body>
 
+    <!-- ГЛАВНОЕ МЕНЮ -->
     <div id="menu-container">
         <h1>🎮 ИГРОВАЯ ТЕКА</h1>
         <div class="subtitle">Выбирай игру и зарабатывай монеты!</div>
@@ -106,9 +125,10 @@
         </div>
     </div>
 
+    <!-- ИГРОВОЙ ЭКРАН -->
     <div id="game-container">
         <button class="close-btn" onclick="exitGameWithoutReward()">❌ Выйти без награды</button>
-        <div class="status-bar" id="game-status">Ход Белых</div>
+        <div class="status-bar" id="game-status">Ход Бевых</div>
         <div class="board" id="checker-board"></div>
     </div>
 
@@ -160,7 +180,7 @@
         }
 
         function onCellClick(event) {
-            if (gameOver || currentTurn === 'black') return; // ИИ ходит, кликать нельзя
+            if (gameOver || currentTurn === 'black') return;
 
             const cell = event.currentTarget;
             const checker = cell.querySelector('.checker');
@@ -188,7 +208,7 @@
                         if (!checkWinCondition()) {
                             currentTurn = 'black';
                             document.getElementById('game-status').innerText = "🤖 Компьютер думает...";
-                            setTimeout(makeAiMove, 600); // Задержка хода ИИ для реализма
+                            setTimeout(makeAiMove, 600);
                         }
                     }
                 } else if (checker && checker.dataset.color === 'white') {
@@ -199,7 +219,6 @@
             }
         }
 
-        // Проверка правил хода и рубки
         function validateMove(fromCell, toCell, color) {
             const fromRow = parseInt(fromCell.dataset.row);
             const fromCol = parseInt(fromCell.dataset.col);
@@ -211,7 +230,6 @@
             const rowDiff = toRow - fromRow;
             const colDiff = Math.abs(toCol - fromCol);
 
-            // 1. Обычный ход на 1 клетку
             if (colDiff === 1) {
                 if (isKing && Math.abs(rowDiff) === 1) return { isValid: true, scannedEnemyCell: null };
                 if (!isKing) {
@@ -220,14 +238,12 @@
                 }
             }
 
-            // 2. Ход с рубкой врага (перепрыгивание через 2 клетки)
             if (Math.abs(rowDiff) === 2 && colDiff === 2) {
                 const midRow = (fromRow + toRow) / 2;
                 const midCol = (fromCol + toCol) / 2;
                 const midCell = document.querySelector(`[data-row='${midRow}'][data-col='${midCol}']`);
                 const midChecker = midCell ? midCell.querySelector('.checker') : null;
 
-                // Рубить можно во все стороны, если там враг! Назад обычной рубить можно по правилам шашек
                 if (midChecker && midChecker.dataset.color !== color) {
                     return { isValid: true, scannedEnemyCell: midCell };
                 }
@@ -236,7 +252,6 @@
             return { isValid: false, scannedEnemyCell: null };
         }
 
-        // Выполнение перемещения фигуры на доске
         function executeMove(fromCell, toCell, enemyCellToDelete) {
             const movingChecker = fromCell.querySelector('.checker');
             
@@ -247,7 +262,6 @@
 
             toCell.appendChild(movingChecker);
 
-            // Логика превращения в Дамку
             const toRow = parseInt(toCell.dataset.row);
             if (movingChecker.dataset.color === 'white' && toRow === 0) {
                 movingChecker.dataset.isKing = 'true';
@@ -259,7 +273,6 @@
             }
         }
 
-        // Искусственный Интеллект для Черных
         function makeAiMove() {
             if (gameOver) return;
 
@@ -269,7 +282,6 @@
             let possibleEatMoves = [];
             let possibleNormalMoves = [];
 
-            // Собираем все доступные ходы ИИ
             for (let fromCell of blackCellsWithCheckers) {
                 for (let toCell of allEmptyCells) {
                     const move = validateMove(fromCell, toCell, 'black');
@@ -283,12 +295,10 @@
                 }
             }
 
-            // Приоритет: если ИИ может срубить твою шашку — он обязательно её рубит
             if (possibleEatMoves.length > 0) {
                 const finalMove = possibleEatMoves[Math.floor(Math.random() * possibleEatMoves.length)];
                 executeMove(finalMove.from, finalMove.to, finalMove.enemy);
             } else if (possibleNormalMoves.length > 0) {
-                // Иначе просто делает случайный разрешенный ход вперед
                 const finalMove = possibleNormalMoves[Math.floor(Math.random() * possibleNormalMoves.length)];
                 executeMove(finalMove.from, finalMove.to, null);
             }
